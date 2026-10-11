@@ -10,7 +10,7 @@ import { withUserConfig } from "../utils/config-overlay.ts";
  * 类型见 src/types/config.ts。
  */
 export const siteConfig: SiteConfig = withUserConfig("site", {
-	site: "https://shirone.mysqil.com/",
+	site: "http://62.234.3.154/",
 	base: "/",
 	title: "ChiCat",
 	subtitle: "A Material 3 anime blog",
