@@ -19,6 +19,7 @@ let {
 	group,
 	locale,
 	local,
+	remote = false,
 	api,
 	dirty = $bindable(false),
 	saving = $bindable(false),
@@ -26,6 +27,7 @@ let {
 	group: string;
 	locale: string;
 	local: boolean;
+	remote?: boolean;
 	api: <T>(path: string, data?: unknown) => Promise<T>;
 	dirty?: boolean;
 	saving?: boolean;
@@ -68,11 +70,13 @@ $effect(() => {
 });
 function error(code: string) {
 	issue = t(
-		code === "conflict"
-			? I18nKey.adminConflict
-			: code === "validation"
-				? I18nKey.adminConfigInvalid
-				: I18nKey.adminUnavailable,
+		code === "publish"
+			? I18nKey.adminPublishFailed
+			: code === "conflict"
+				? I18nKey.adminConflict
+				: code === "validation"
+					? I18nKey.adminConfigInvalid
+					: I18nKey.adminUnavailable,
 	);
 }
 async function loadList() {
@@ -142,7 +146,7 @@ async function save(event: SubmitEvent) {
 		if (!active) return;
 		document = result;
 		initial = snapshot();
-		message = t(I18nKey.adminConfigSaved);
+		message = t(remote ? I18nKey.adminServerSaved : I18nKey.adminConfigSaved);
 	} catch (e) {
 		if (active) {
 			error((e as Error).message);

@@ -12,6 +12,10 @@ export const zh_CN: Translation = {
 	[Key.adminReturn]: "返回博客",
 	[Key.adminLocalHint]: "本地写作模式 · 保存会直接更新文章文件",
 	[Key.adminOnlineHint]: "在线编辑尚未启用，请在本地启动项目后管理内容。",
+	[Key.adminServerHint]: "服务器写作模式 · 保存时自动构建发布，请等待完成",
+	[Key.adminServerSaved]: "已保存并发布到网站。",
+	[Key.adminPublishFailed]:
+		"源文件已保存，但发布失败，网站保留上一版本。请检查服务日志后重试。",
 	[Key.adminSearch]: "搜索标题、分类或标签",
 	[Key.adminEmpty]: "没有找到文章，试试其他关键词。",
 	[Key.adminEdit]: "编辑文章",

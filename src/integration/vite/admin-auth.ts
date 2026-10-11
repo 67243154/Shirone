@@ -156,8 +156,8 @@ export function createAdminAuth(
 	};
 }
 
-export function adminSessionCookie(token: string): string {
-	return `${adminCookie}=${token}; HttpOnly; SameSite=Strict; Path=/__admin/; Max-Age=${token ? lifetime / 1000 : 0}`;
+export function adminSessionCookie(token: string, secure = false): string {
+	return `${adminCookie}=${token}; HttpOnly; SameSite=Strict; Path=/__admin/; Max-Age=${token ? lifetime / 1000 : 0}${secure ? "; Secure" : ""}`;
 }
 export function adminSessionToken(cookie: string | undefined): string {
 	return (

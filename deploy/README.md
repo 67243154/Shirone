@@ -1,35 +1,73 @@
-# Server deployment
+# Authenticated production administration
 
-The public blog is served by Nginx at `http://62.234.3.154/` on port 80.
-Build on the authoring machine using `pnpm.cmd build`, then upload only `dist/`.
-Do not upload local admin password files, SSH keys, source credentials or `node_modules`.
+The public site remains static. The server runs the existing post/config/image
+stores and scrypt authentication through an independent loopback Node service.
+Saving in `/admin/` queues an Astro + Pagefind build and atomically switches the
+public release on success. A failed build keeps the previous live release;
+source changes remain saved and the editor reports publication failure.
 
-## Layout
+## Server layout
 
-- Site configuration: `/etc/nginx/sites-available/shirone`
-- Enabled configuration: `/etc/nginx/sites-enabled/shirone`
-- Static releases: `/var/www/shirone/releases/<release-id>`
-- Active release symlink: `/var/www/shirone/current`
-- Deployment backups: `/var/backups/shirone/<deployment-id>`
+- HTTPS administration: `https://62.234.3.154/admin/`
+- HTTP port 80 stays available; admin/API routes redirect to HTTPS port 443.
+- Source and dependencies: `/opt/shirone/app` (dedicated `shirone` account)
+- Private salt/hash credential: `/opt/shirone/private/auth`, mode 600
+- Runtime: `/opt/shirone/runtime/node` and `/opt/shirone/runtime/pnpm`
+- Service environment: `/etc/shirone/admin.env`, root-only
+- Service: `shirone-admin.service`, listening only on `127.0.0.1:4324`
+- Nginx: `/etc/nginx/sites-available/shirone`
+- Releases: `/var/www/shirone/releases/<release-id>`
+- Active release: `/var/www/shirone/current`
+- Configuration backups: `/var/backups/shirone/<deployment-id>`
 
-`nginx-shirone.conf` is the production configuration template. Check it with
-`sudo nginx -t` before `sudo systemctl reload nginx`.
-For subsequent releases, upload to a new release directory and update the
-`current` symlink after verifying the build. Keep the previous release for rollback.
+The existing IP certificate is self-signed. Trust it in the owner's browser or
+replace it with a trusted certificate; do not enter the password over HTTP.
+The local password remains valid when its existing salt/hash file is provisioned
+through SSH. Neither plaintext passwords nor SSH keys belong in the project or
+public document root. Remote password setup is disabled.
 
-## Existing applications
+## Build and start
 
-The existing `knowledge-base-rag` Nginx site moves from port 80 to port 8082.
-Its document root, API proxy and `/boxhead/` proxy stay in its original configuration.
-The existing Boxhead listener on 8081 and Thunder HTTPS listener on 8443 remain in place.
-Access to port 8082 from the internet depends on the cloud security group rules.
+Install dependencies with the pinned pnpm version, then bundle the existing API:
 
-The production blog is static. `/admin/` does not provide server-side content editing;
-edit through the local authenticated admin, commit, build and deploy.
+```sh
+pnpm install --frozen-lockfile
+node scripts/admin/build.mjs
+```
 
-## Rollback
+Configure these variables in `/etc/shirone/admin.env`:
 
-Each initial port migration backs up the original `knowledge-base-rag` configuration.
-To restore the original port-80 site, restore that backup, remove only the enabled
-`shirone` symlink, run `sudo nginx -t`, then reload Nginx.
-To roll back only a blog update, point `current` to the previous release.
+```ini
+SHIRONE_ADMIN_PROJECT=/opt/shirone/app
+SHIRONE_ADMIN_AUTH_FILE=/opt/shirone/private/auth
+SHIRONE_ADMIN_PUBLIC_ROOT=/var/www/shirone
+SHIRONE_ADMIN_PNPM=/opt/shirone/runtime/pnpm/node_modules/.bin/pnpm
+SHIRONE_ADMIN_ORIGIN=https://62.234.3.154
+SHIRONE_ADMIN_PORT=4324
+```
+
+Provision credentials with owner `shirone` and mode 600, install the service
+unit, and start it with `systemctl enable --now shirone-admin`. Only builds with
+`SHIRONE_REMOTE_ADMIN=1` enable the remote editor. Ordinary static builds remain
+read-only. This runner supports the source checkout; local npm-package authoring
+continues to use its existing resolved directories and loopback Vite plugin.
+
+For an initial release, run `scripts/admin/build-site.mjs <release-directory>`
+with `SHIRONE_REMOTE_ADMIN=1` and the pnpm path above; validate the output before
+switching `current`. Check Nginx with `sudo nginx -t` before reloading.
+Use `journalctl -u shirone-admin` for build errors. Run `node --experimental-strip-types
+--test tests/admin/*.test.ts tests/admin/publish.test.mjs` for API and publication
+checks. Publication symlink tests run on Linux.
+
+Server edits are authoritative source files and do not automatically commit or
+push to GitHub. Back up/synchronize them before replacing server source on a
+future deployment. The API preserves allowlists, type validation, version checks,
+path and symlink checks, sessions, write tokens and origin checks.
+
+## Existing applications and rollback
+
+Thunder HTTPS on 8443, Boxhead on 8081 and knowledge-base-rag on 8082 keep their
+existing services. TCP 443 must be allowed by the cloud security group.
+Roll back a blog publication by pointing `current` at a previous release.
+Restore the backed-up Nginx file, test configuration, then reload if routing
+changes need rollback. Never remove the previous live release during deployment.

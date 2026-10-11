@@ -39,11 +39,12 @@ active source. Config changes may restart Astro, and build integration changes
 require a dev-server restart. Refresh after reload; rebuild/deploy for production.
 Disabling the admin switch also disables further local editing after restart.
 
-The API exists only in `astro dev`, requires a loopback client and host,
+By default the API exists only in `astro dev`, requires a loopback client and host,
 same-origin requests, an authenticated session and a per-server editing token. It never
 commits or pushes to GitHub. Production emits only the workspace shell: no
-article sources, draft titles or write API. Online administration requires a
-separate authenticated backend and is not enabled by this change.
+article sources, draft titles or write API. For this source checkout, the standalone service in `scripts/admin/server.mjs`
+reuses the same stores and authentication. See `deploy/README.md` for the explicit
+production opt-in, HTTPS proxy, private credentials and automatic publication.
 
 `src/config/adminConfig.ts` enables this workspace for this fork. Set `enable`
 to false to disable the route and local API. The plugin uses the integration's

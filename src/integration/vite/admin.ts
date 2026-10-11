@@ -239,23 +239,216 @@ async function readJson(
 	}
 }
 
-/** Dev-only authoring API; never registered in preview/build or remote hosts. */
+export interface AdminMiddlewareOptions {
+	origin?: string;
+	authFile?: string;
+	afterSave?: () => Promise<void>;
+}
+export function createAdminMiddleware(
+	contentDir: string,
+	projectRoot: string,
+	documentPaths: AdminDocumentPaths,
+	options: AdminMiddlewareOptions = {},
+): (
+	request: IncomingMessage,
+	response: import("node:http").ServerResponse,
+	next: () => void,
+) => Promise<void> {
+	if (options.origin) {
+		const url = new URL(options.origin);
+		if (url.protocol !== "https:" || url.origin !== options.origin)
+			throw new Error("An exact HTTPS admin origin is required");
+	}
+	const token = randomBytes(32).toString("hex");
+	const store = createAdminStore(contentDir);
+	const documents = createAdminDocumentStore(documentPaths);
+	const authFile =
+		options.authFile ??
+		join(
+			projectRoot,
+			process.env.SHIRONE_ADMIN_AUTH_TEST === "1"
+				? ".env.shirone-admin-test-auth"
+				: ".env.shirone-admin-auth",
+		);
+	const auth = createAdminAuth(authFile);
+	const markdown = new MarkdownIt({ html: false, linkify: false });
+	let pending: Promise<unknown> = Promise.resolve();
+	async function mutate<T>(save: () => Promise<T>): Promise<T> {
+		const task = pending.then(async () => {
+			const saved = await save();
+			if (options.afterSave) {
+				try {
+					await options.afterSave();
+				} catch {
+					throw new AdminDocumentError(
+						"publish",
+						503,
+						"Source saved; publication failed. The previous live release is unchanged.",
+					);
+				}
+			}
+			return saved;
+		});
+		pending = task.catch(() => {});
+		return task;
+	}
+	return async (request, response, next) => {
+		const pathname = (request.url ?? "").split("?")[0];
+		if (!pathname.startsWith("/__admin/api/")) return next();
+		response.setHeader("Content-Type", "application/json; charset=utf-8");
+		response.setHeader("Cache-Control", "no-store");
+		response.setHeader("X-Content-Type-Options", "nosniff");
+		const send = (data: unknown) => {
+			response.end(JSON.stringify(data));
+		};
+		try {
+			const host = request.headers.host ?? "";
+			const address = request.socket.remoteAddress ?? "";
+			const origin = options.origin ?? `http://${host}`;
+			if (
+				(options.origin
+					? host !== new URL(options.origin).host ||
+						request.headers["x-forwarded-proto"] !== "https"
+					: !/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host)) ||
+				!["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(address) ||
+				request.headers["sec-fetch-site"] === "cross-site" ||
+				(request.headers.origin && request.headers.origin !== origin)
+			)
+				throw new AdminError("forbidden", 403);
+			if (
+				process.env.CONTENT_DIR ||
+				process.env.CONTENT_REPO_URL ||
+				existsSync(join(projectRoot, "shirone.content.json"))
+			)
+				throw new AdminError("external", 409);
+			const session = adminSessionToken(request.headers.cookie);
+			if (pathname === "/__admin/api/auth/status" && request.method === "GET")
+				return send({
+					configured: await auth.configured(),
+					authenticated: auth.authenticated(session),
+				});
+			if (
+				pathname.startsWith("/__admin/api/auth/") &&
+				request.method === "POST"
+			) {
+				if (
+					request.headers.origin !== origin ||
+					!request.headers["content-type"]?.startsWith("application/json")
+				)
+					throw new AdminError("forbidden", 403);
+				if (pathname === "/__admin/api/auth/logout") {
+					auth.logout(session);
+					response.setHeader(
+						"Set-Cookie",
+						adminSessionCookie("", !!options.origin),
+					);
+					return send({ authenticated: false });
+				}
+				const data = await readJson(request);
+				if (
+					pathname !== "/__admin/api/auth/setup" &&
+					pathname !== "/__admin/api/auth/login"
+				)
+					throw new AdminError("notFound", 404);
+				if (options.origin && pathname.endsWith("/setup"))
+					throw new AdminError("forbidden", 403);
+				const nextSession = pathname.endsWith("/setup")
+					? await auth.setup(data.password)
+					: await auth.login(data.password);
+				auth.logout(session);
+				response.setHeader(
+					"Set-Cookie",
+					adminSessionCookie(nextSession, !!options.origin),
+				);
+				return send({ authenticated: true });
+			}
+			if (!auth.authenticated(session))
+				throw new AdminError("unauthorized", 401);
+			if (pathname === "/__admin/api/session" && request.method === "GET")
+				return send({ token });
+			if (pathname === "/__admin/api/image" && request.method === "GET") {
+				const url = new URL(request.url ?? "/", origin);
+				try {
+					const image = await readAdminImage(
+						projectRoot,
+						contentDir,
+						url.searchParams.get("path") ?? "",
+						url.searchParams.get("post") ?? "",
+					);
+					response.setHeader("Content-Type", image.type);
+					response.setHeader(
+						"Content-Security-Policy",
+						"default-src 'none'; sandbox",
+					);
+					response.end(image.body);
+					return;
+				} catch {
+					throw new AdminError("notFound", 404);
+				}
+			}
+			if (request.headers["x-shirone-admin"] !== token)
+				throw new AdminError("forbidden", 403);
+			const url = new URL(request.url ?? "/", origin);
+			if (pathname === "/__admin/api/documents" && request.method === "GET")
+				return send({ ids: await documents.list() });
+			if (pathname === "/__admin/api/document" && request.method === "GET")
+				return send(await documents.read(url.searchParams.get("id") ?? ""));
+			if (pathname === "/__admin/api/posts" && request.method === "GET")
+				return send({ posts: await store.list() });
+			if (pathname === "/__admin/api/post" && request.method === "GET")
+				return send(await store.read(url.searchParams.get("file") ?? ""));
+			if (request.method !== "POST") throw new AdminError("method", 405);
+			if (
+				!request.headers.origin ||
+				!request.headers["content-type"]?.startsWith("application/json")
+			)
+				throw new AdminError("forbidden", 403);
+			const data = await readJson(request);
+			if (pathname === "/__admin/api/document")
+				return send(
+					await mutate(() =>
+						documents.save(
+							data as unknown as Parameters<typeof documents.save>[0],
+						),
+					),
+				);
+			if (pathname === "/__admin/api/post")
+				return send(
+					await mutate(() => store.save(data as unknown as AdminSave)),
+				);
+			if (pathname === "/__admin/api/preview" && typeof data.body === "string")
+				return send({ html: sanitizeHtml(markdown.render(data.body)) });
+			throw new AdminError("notFound", 404);
+		} catch (error) {
+			response.statusCode =
+				error instanceof AdminError ||
+				error instanceof AdminDocumentError ||
+				error instanceof AdminAuthError
+					? error.status
+					: (error as NodeJS.ErrnoException).code === "ENOENT"
+						? 404
+						: 500;
+			send({
+				code:
+					error instanceof AdminError ||
+					error instanceof AdminDocumentError ||
+					error instanceof AdminAuthError
+						? error.code
+						: "unavailable",
+				...(error instanceof AdminDocumentError && error.details
+					? { details: error.details }
+					: {}),
+			});
+		}
+	};
+}
+
+/** Local authoring retains its loopback-only request policy. */
 export function shironesAdmin(
 	contentDir: string,
 	projectRoot: string,
 	documentPaths: AdminDocumentPaths,
 ): Plugin {
-	const token = randomBytes(32).toString("hex");
-	const store = createAdminStore(contentDir);
-	const documents = createAdminDocumentStore(documentPaths);
-	const authFile = join(
-		projectRoot,
-		process.env.SHIRONE_ADMIN_AUTH_TEST === "1"
-			? ".env.shirone-admin-test-auth"
-			: ".env.shirone-admin-auth",
-	);
-	const auth = createAdminAuth(authFile);
-	const markdown = new MarkdownIt({ html: false, linkify: false });
 	return {
 		name: "shirones-local-admin",
 		apply: "serve",
@@ -279,143 +472,9 @@ export function shironesAdmin(
 			};
 		},
 		configureServer(server) {
-			server.middlewares.use(async (request, response, next) => {
-				const pathname = (request.url ?? "").split("?")[0];
-				if (!pathname.startsWith("/__admin/api/")) return next();
-				response.setHeader("Content-Type", "application/json; charset=utf-8");
-				response.setHeader("Cache-Control", "no-store");
-				response.setHeader("X-Content-Type-Options", "nosniff");
-				const send = (data: unknown) => response.end(JSON.stringify(data));
-				try {
-					const host = request.headers.host ?? "";
-					const address = request.socket.remoteAddress ?? "";
-					if (
-						!/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host) ||
-						!["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(address) ||
-						request.headers["sec-fetch-site"] === "cross-site" ||
-						(request.headers.origin &&
-							request.headers.origin !== `http://${host}`)
-					)
-						throw new AdminError("forbidden", 403);
-					if (
-						process.env.CONTENT_DIR ||
-						process.env.CONTENT_REPO_URL ||
-						existsSync(join(projectRoot, "shirone.content.json"))
-					)
-						throw new AdminError("external", 409);
-					const session = adminSessionToken(request.headers.cookie);
-					if (
-						pathname === "/__admin/api/auth/status" &&
-						request.method === "GET"
-					)
-						return send({
-							configured: await auth.configured(),
-							authenticated: auth.authenticated(session),
-						});
-					if (
-						pathname.startsWith("/__admin/api/auth/") &&
-						request.method === "POST"
-					) {
-						if (
-							request.headers.origin !== `http://${host}` ||
-							!request.headers["content-type"]?.startsWith("application/json")
-						)
-							throw new AdminError("forbidden", 403);
-						if (pathname === "/__admin/api/auth/logout") {
-							auth.logout(session);
-							response.setHeader("Set-Cookie", adminSessionCookie(""));
-							return send({ authenticated: false });
-						}
-						const data = await readJson(request);
-						if (
-							pathname !== "/__admin/api/auth/setup" &&
-							pathname !== "/__admin/api/auth/login"
-						)
-							throw new AdminError("notFound", 404);
-						const nextSession = pathname.endsWith("/setup")
-							? await auth.setup(data.password)
-							: await auth.login(data.password);
-						auth.logout(session);
-						response.setHeader("Set-Cookie", adminSessionCookie(nextSession));
-						return send({ authenticated: true });
-					}
-					if (!auth.authenticated(session))
-						throw new AdminError("unauthorized", 401);
-					if (pathname === "/__admin/api/session" && request.method === "GET")
-						return send({ token });
-					if (pathname === "/__admin/api/image" && request.method === "GET") {
-						const url = new URL(request.url ?? "/", `http://${host}`);
-						try {
-							const image = await readAdminImage(
-								projectRoot,
-								contentDir,
-								url.searchParams.get("path") ?? "",
-								url.searchParams.get("post") ?? "",
-							);
-							response.setHeader("Content-Type", image.type);
-							response.setHeader(
-								"Content-Security-Policy",
-								"default-src 'none'; sandbox",
-							);
-							return response.end(image.body);
-						} catch {
-							throw new AdminError("notFound", 404);
-						}
-					}
-					if (request.headers["x-shirone-admin"] !== token)
-						throw new AdminError("forbidden", 403);
-					const url = new URL(request.url ?? "/", `http://${host}`);
-					if (pathname === "/__admin/api/documents" && request.method === "GET")
-						return send({ ids: await documents.list() });
-					if (pathname === "/__admin/api/document" && request.method === "GET")
-						return send(await documents.read(url.searchParams.get("id") ?? ""));
-					if (pathname === "/__admin/api/posts" && request.method === "GET")
-						return send({ posts: await store.list() });
-					if (pathname === "/__admin/api/post" && request.method === "GET")
-						return send(await store.read(url.searchParams.get("file") ?? ""));
-					if (request.method !== "POST") throw new AdminError("method", 405);
-					if (
-						!request.headers.origin ||
-						!request.headers["content-type"]?.startsWith("application/json")
-					)
-						throw new AdminError("forbidden", 403);
-					const data = await readJson(request);
-					if (pathname === "/__admin/api/document")
-						return send(
-							await documents.save(
-								data as unknown as Parameters<typeof documents.save>[0],
-							),
-						);
-					if (pathname === "/__admin/api/post")
-						return send(await store.save(data as unknown as AdminSave));
-					if (
-						pathname === "/__admin/api/preview" &&
-						typeof data.body === "string"
-					)
-						return send({ html: sanitizeHtml(markdown.render(data.body)) });
-					throw new AdminError("notFound", 404);
-				} catch (error) {
-					response.statusCode =
-						error instanceof AdminError ||
-						error instanceof AdminDocumentError ||
-						error instanceof AdminAuthError
-							? error.status
-							: (error as NodeJS.ErrnoException).code === "ENOENT"
-								? 404
-								: 500;
-					send({
-						code:
-							error instanceof AdminError ||
-							error instanceof AdminDocumentError ||
-							error instanceof AdminAuthError
-								? error.code
-								: "unavailable",
-						...(error instanceof AdminDocumentError && error.details
-							? { details: error.details }
-							: {}),
-					});
-				}
-			});
+			server.middlewares.use(
+				createAdminMiddleware(contentDir, projectRoot, documentPaths),
+			);
 		},
 	};
 }

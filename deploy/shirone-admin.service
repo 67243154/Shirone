@@ -1,0 +1,26 @@
+[Unit]
+Description=Shirone authenticated content administration
+After=network.target
+
+[Service]
+Type=simple
+User=shirone
+Group=shirone
+WorkingDirectory=/opt/shirone/app
+EnvironmentFile=/etc/shirone/admin.env
+Environment=PATH=/opt/shirone/runtime/node/bin:/usr/local/bin:/usr/bin:/bin
+Environment=ASTRO_TELEMETRY_DISABLED=1
+ExecStart=/opt/shirone/runtime/node/bin/node /opt/shirone/app/.shirones/admin-server.mjs
+Restart=on-failure
+RestartSec=5
+UMask=0022
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/shirone/app /var/www/shirone
+MemoryMax=2G
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

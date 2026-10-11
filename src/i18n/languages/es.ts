@@ -2,6 +2,11 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const es: Translation = {
+	[Key.adminServerHint]:
+		"Server editing · saving rebuilds and publishes the site; please wait",
+	[Key.adminServerSaved]: "Saved and published to the website.",
+	[Key.adminPublishFailed]:
+		"Source saved, but publication failed. The website keeps its previous release. Check service logs before retrying.",
 	[Key.adminTitle]: "Content studio",
 	[Key.adminSubtitle]: "Turn ideas into stories.",
 	[Key.adminOverview]: "Writing workspace",
