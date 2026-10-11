@@ -191,11 +191,15 @@ export function generateIconCollections({
 		`export const localIconCollections = ${JSON.stringify(collections)} as const;`,
 		"",
 	].join("\n");
-	// Write-then-rename so a dev server reading mid-write never sees a partial file.
-	const temporaryPath = `${outputPath}.tmp`;
-	mkdirSync(dirname(outputPath), { recursive: true });
-	writeFileSync(temporaryPath, output, "utf8");
-	renameSync(temporaryPath, outputPath);
+	// Editing article text rarely changes icons. Preserve the existing file to
+	// avoid reloading hydrated writing controls for an unchanged collection.
+	if (!existsSync(outputPath) || readFileSync(outputPath, "utf8") !== output) {
+		// Write-then-rename prevents readers seeing a partial file.
+		const temporaryPath = `${outputPath}.tmp`;
+		mkdirSync(dirname(outputPath), { recursive: true });
+		writeFileSync(temporaryPath, output, "utf8");
+		renameSync(temporaryPath, outputPath);
+	}
 
 	return collections.reduce(
 		(total, collection) =>

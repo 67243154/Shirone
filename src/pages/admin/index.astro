@@ -1,0 +1,10 @@
+---
+import AdminWorkspace from "@components/organisms/AdminWorkspace.svelte";
+import AdminLayout from "@layouts/AdminLayout.astro";
+import { adminConfig } from "@/config/adminConfig";
+
+if (!adminConfig.enable) return Astro.redirect("/404/");
+---
+<AdminLayout>
+ <AdminWorkspace client:load local={import.meta.env.DEV} />
+</AdminLayout>

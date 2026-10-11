@@ -60,6 +60,8 @@ public/assets/moments/thumbnails/*
 !public/assets/moments/thumbnails/.gitkeep
 
 # local tooling artifacts
+.shirone-admin-auth.json
+.shirone-admin-test-auth.json
 .zcode/
 .codex-*.log
 research/
@@ -77,3 +79,7 @@ artifacts/lighthouse/*
 
 # generated AI skills plugin packages
 artifacts/shirone-ai-*
+
+# Private local admin credentials (also denied by Vite .env.* rules)
+.env.shirone-admin-auth
+.env.shirone-admin-test-auth

@@ -85,7 +85,8 @@ export const IMAGE_ENDPOINT_ROUTE = "/_image/";
  */
 export const swupOptions: NonNullable<Parameters<typeof swup>[0]> = {
 	theme: false as const,
-	ignore: ['a[href="#"]'],
+	// Admin owns a separate writing shell; cross this boundary with a full navigation.
+	ignore: ['a[href="#"]', "/admin", 'a[href*="/admin/"]'],
 	animationClass: "transition-swup-",
 	containers: ["main", "#toc"],
 	smoothScrolling: true,

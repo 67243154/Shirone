@@ -118,7 +118,14 @@ export function shironesIconRegeneration(
 		handleHotUpdate({ file }) {
 			// Writing the output re-triggers this handler; regenerating again
 			// would loop.
-			if (file === userCopy) return;
+			// Vite normalizes watched paths to '/', while node:path uses '\\'
+			// on Windows. Comparing raw paths makes the generated file loop.
+			const watched = file.replaceAll("\\", "/");
+			if (
+				watched === userCopy.replaceAll("\\", "/") ||
+				watched === packageCopy.replaceAll("\\", "/")
+			)
+				return;
 			if (!SOURCE_EXTENSIONS.test(file)) return;
 
 			clearTimeout(pending.get(paths.projectRoot));

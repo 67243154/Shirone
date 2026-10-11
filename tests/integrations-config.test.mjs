@@ -53,7 +53,11 @@ describe("shared integrations config", () => {
 		// @swup/astro 1.8.0 的 Options 声明 ignore 为 (string | RegExp)[] |
 		// function；裸字符串只是运行时碰巧能用。
 		assert.ok(Array.isArray(swupOptions.ignore));
-		assert.deepEqual(swupOptions.ignore, ['a[href="#"]']);
+		assert.deepEqual(swupOptions.ignore, [
+			'a[href="#"]',
+			"/admin",
+			'a[href*="/admin/"]',
+		]);
 	});
 
 	it("keeps the forward-compat swup options separate", () => {

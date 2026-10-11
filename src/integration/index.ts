@@ -241,6 +241,13 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					"sidebarConfig",
 					registryRef,
 				);
+				const adminModule =
+					command === "dev"
+						? await loadConfigModule(paths, "adminConfig", registryRef)
+						: null;
+				const adminEnabled =
+					(adminModule?.adminConfig as { enable?: boolean } | undefined)
+						?.enable === true;
 				const sidebarConfig = sidebarModule.sidebarConfig as {
 					enable?: boolean;
 					components?: { type: string; enable: boolean }[];
@@ -336,6 +343,21 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					vite: {
 						resolve: { alias: createAliases(paths) },
 						plugins: [
+							...(adminEnabled
+								? [
+										(await import("./vite/admin.ts")).shironesAdmin(
+											paths.contentDir,
+											paths.projectRoot,
+											{
+												projectRoot: paths.projectRoot,
+												configDir: paths.configDir,
+												dataDir: paths.dataDir,
+												contentDir: paths.contentDir,
+												isThemeRepo: paths.isThemeRepo,
+											},
+										),
+									]
+								: []),
 							// The overlay rewriter redirects user files onto package
 							// files; inside the theme's own repository every import already
 							// resolves to the real source, so there is nothing to overlay.

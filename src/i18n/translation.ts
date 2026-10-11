@@ -45,16 +45,21 @@ export function getTranslation(lang: string): Translation {
 	return map[lang.toLowerCase()] || defaultTranslation;
 }
 
-export function i18n(key: I18nKey): string {
-	const lang = (siteConfig.lang || "en").toLowerCase();
+export function i18n(key: I18nKey, locale?: string): string {
+	const lang = (
+		locale ||
+		(typeof document !== "undefined"
+			? document.documentElement.dataset.uiLanguage
+			: undefined) ||
+		siteConfig.lang ||
+		"en"
+	).toLowerCase();
 
 	// 1. 查找用户自定义 i18n 覆盖域（支持原大小写及小写匹配，如 zh_CN / zh_cn）
 	if (i18nConfig && typeof i18nConfig === "object") {
 		const langOverrides =
 			i18nConfig[lang] ??
-			Object.entries(i18nConfig).find(
-				([k]) => k.toLowerCase() === lang,
-			)?.[1];
+			Object.entries(i18nConfig).find(([k]) => k.toLowerCase() === lang)?.[1];
 
 		if (langOverrides && typeof langOverrides === "object") {
 			const customVal = langOverrides[key];
