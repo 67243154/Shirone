@@ -1,8 +1,58 @@
-import { expect, test } from "./admin-fixtures";
-import AxeBuilder from "@axe-core/playwright";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import AxeBuilder from "@axe-core/playwright";
 import { adminDocuments } from "../../src/utils/admin-catalog";
+import { expect, test } from "./admin-fixtures";
+
+test("list editing retains focus and never saves while typing", async ({
+	page,
+}) => {
+	await page.goto("/admin/");
+	await expect(page.locator(".admin-article-list li").first()).toBeVisible();
+	await page.getByRole("button", { name: "站点设置", exact: true }).click();
+	await page.getByRole("button", { name: /站点基础与主题/ }).click();
+	const subtitle = page.getByLabel("首页横幅副标题清单 1", { exact: true });
+	const row = page.locator(".admin-array-item").filter({ has: subtitle });
+	if (!(await subtitle.isVisible())) await row.locator("summary").click();
+	let saves = 0;
+	page.on("request", (request) => {
+		if (
+			request.method() === "POST" &&
+			request.url().includes("/__admin/api/document")
+		)
+			saves++;
+	});
+	await subtitle.fill("");
+	await subtitle.focus();
+	for (const character of "中文副标题 test") {
+		await page.keyboard.insertText(character);
+		await expect(row).toHaveAttribute("open", "");
+		await expect(subtitle).toBeFocused();
+	}
+	await expect(subtitle).toHaveValue("中文副标题 test");
+	await expect(row.locator("summary")).toContainText("中文副标题 test");
+	await subtitle.press("ArrowLeft");
+	await page.keyboard.insertText("!");
+	await expect(subtitle).toBeFocused();
+	await expect(subtitle).toHaveValue("中文副标题 tes!t");
+	await subtitle.scrollIntoViewIfNeeded();
+	await page.screenshot({ path: "../output/admin-list-editing.jpg" });
+	page.on("dialog", (dialog) => void dialog.accept());
+	await page.getByRole("button", { name: "返回栏目列表", exact: true }).click();
+	await page.getByRole("button", { name: /个人资料与社交链接/ }).click();
+	const linkName = page
+		.locator(".admin-array-item")
+		.first()
+		.getByRole("textbox", { name: "名称", exact: true });
+	await linkName.fill("");
+	await linkName.focus();
+	for (const character of "社交链接 test") {
+		await page.keyboard.insertText(character);
+		await expect(linkName).toBeFocused();
+	}
+	await expect(linkName).toHaveValue("社交链接 test");
+	expect(saves).toBe(0);
+});
 
 test("all documented config/data sections are available; forms, lists and source modes work", async ({
 	page,

@@ -20,6 +20,10 @@ let {
 } = $props();
 const t = (key: I18nKey): string => i18n(key, locale);
 const items = $derived(JSON.parse(value) as unknown[]);
+function initializeExpansion(details: HTMLDetailsElement) {
+	// Set the default once; subsequent toggles belong to the user, not JSON edits.
+	details.open = items.length <= 3;
+}
 let template = $state<unknown>(null);
 $effect(() => {
 	if (template === null && items.length)
@@ -70,12 +74,13 @@ function nested(event: Event, index: number, key: string) {
 </script>
 
 <div class="admin-array-editor">
- {#each items as item, index}
-  <details class="admin-array-item" open={items.length <= 3}>
+ <!-- Keep row identity independent of the JSON value being edited. -->
+ {#each items as item, index (index)}
+  <details class="admin-array-item" use:initializeExpansion>
    <summary>{index + 1}. {item && typeof item === "object" ? String((item as Record<string, unknown>).title ?? (item as Record<string, unknown>).name ?? (item as Record<string, unknown>).id ?? adminFieldLabel(label, locale)) : String(item || adminFieldLabel(label, locale))}</summary>
    <div class="admin-config-fields">
-    {#if item && typeof item === "object" && !Array.isArray(item)}
-     {#each Object.entries(item) as [key, entry]}
+    {#if typeof item === "object" && item !== null && !Array.isArray(item)}
+     {#each Object.entries(item) as [key, entry] (key)}
       <div class="admin-config-field">
        {#if typeof entry === "boolean"}<div class="admin-toggle"><span>{adminFieldLabel(key, locale)}</span><Switch bind:checked={() => entry as boolean, (checked) => update(index, key, checked)} label={adminFieldLabel(key, locale)} {disabled} /></div><span class="admin-value-label">{t(entry ? I18nKey.adminEnabled : I18nKey.adminDisabled)}</span>
        {:else}<label><span>{adminFieldLabel(key, locale)}</span>
