@@ -41,7 +41,7 @@ Disabling the admin switch also disables further local editing after restart.
 
 By default the API exists only in `astro dev`, requires a loopback client and host,
 same-origin requests, an authenticated session and a per-server editing token. It never
-commits or pushes to GitHub. Production emits only the workspace shell: no
+commits or pushes to GitHub. Ordinary static production builds emit only the workspace shell: no
 article sources, draft titles or write API. For this source checkout, the standalone service in `scripts/admin/server.mjs`
 reuses the same stores and authentication. See `deploy/README.md` for the explicit
 production opt-in, HTTPS proxy, private credentials and automatic publication.

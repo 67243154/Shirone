@@ -1,6 +1,6 @@
 # Production administration
 
-Status: approved; implementation and deployment in progress.
+Status: implemented and deployed; browser trust for the existing self-signed certificate remains an owner action.
 
 ## Objective
 
@@ -87,3 +87,14 @@ bypass a browser certificate warning or enter credentials over HTTP.
 Never: expose the Astro development server, remove local API guards, store a
 plaintext password, provide unauthenticated remote setup, expose arbitrary paths,
 run the administrator service as root, or overwrite existing application data.
+
+## Verification
+
+- Astro check: zero errors, warnings or hints.
+- Production build, Pagefind and font budget check passed.
+- Six focused browser tests passed: authentication, input focus and light/dark accessibility.
+- All ten server-side tests passed on Linux, including failed publication rollback.
+- A real authenticated API save built and activated a release; the verification draft was removed and a clean release published.
+- Public HTTPS admin returned 200; unauthenticated post access returned 401; HTTP admin redirected with 308.
+- Initial uncached image processing exceeded the build timeout. Limited CPU, Node memory and image concurrency, and reused immutable image caches. Subsequent complete builds took about 35 seconds.
+- Production backend listens on loopback only; existing Thunder HTTPS remains available.

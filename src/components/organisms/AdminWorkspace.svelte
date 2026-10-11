@@ -85,7 +85,7 @@ async function api<T>(path: string, data?: unknown): Promise<T> {
 		},
 		...(data ? { body: JSON.stringify(data) } : {}),
 		signal: AbortSignal.timeout(
-			remote && data ? 300000 : path === "document" && data ? 45000 : 15000,
+			remote && data ? 540000 : path === "document" && data ? 45000 : 15000,
 		),
 	});
 	const result = await response.json();

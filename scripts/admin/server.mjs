@@ -43,7 +43,7 @@ const server = createServer((request, response) => {
 		response.end('{"code":"unavailable"}');
 	});
 });
-server.requestTimeout = 300000;
+server.requestTimeout = 540000;
 server.headersTimeout = 15000;
 server.listen(
 	Number(process.env.SHIRONE_ADMIN_PORT ?? "4324"),

@@ -25,6 +25,11 @@ export function createPublisher({ projectRoot, publicRoot, pnpm, runBuild }) {
 							detached: process.platform !== "win32",
 							env: {
 								...process.env,
+								NODE_OPTIONS:
+									process.env.NODE_OPTIONS ?? "--max-old-space-size=1024",
+								UV_THREADPOOL_SIZE: "2",
+								VIPS_CONCURRENCY: "1",
+								MALLOC_ARENA_MAX: "2",
 								SHIRONE_ADMIN_PNPM: pnpm,
 								SHIRONE_REMOTE_ADMIN: "1",
 								ASTRO_TELEMETRY_DISABLED: "1",
@@ -42,7 +47,7 @@ export function createPublisher({ projectRoot, publicRoot, pnpm, runBuild }) {
 							} catch {}
 						}
 						reject(new Error("Publication timed out"));
-					}, 240000);
+					}, 480000);
 					child.once("error", (error) => {
 						clearTimeout(timer);
 						reject(error);

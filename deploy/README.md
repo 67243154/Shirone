@@ -55,7 +55,10 @@ continues to use its existing resolved directories and loopback Vite plugin.
 For an initial release, run `scripts/admin/build-site.mjs <release-directory>`
 with `SHIRONE_REMOTE_ADMIN=1` and the pnpm path above; validate the output before
 switching `current`. Check Nginx with `sudo nginx -t` before reloading.
-Use `journalctl -u shirone-admin` for build errors. Run `node --experimental-strip-types
+The service limits CPU and memory; image processing uses two workers and one
+libvips thread. Keep `node_modules/.astro/assets` between deployments to reuse
+immutable image transforms. Builds time out after eight minutes; API/proxy/editor
+wait up to nine minutes. Use `journalctl -u shirone-admin` for build errors. Run `node --experimental-strip-types
 --test tests/admin/*.test.ts tests/admin/publish.test.mjs` for API and publication
 checks. Publication symlink tests run on Linux.
 
