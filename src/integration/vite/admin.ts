@@ -29,6 +29,7 @@ import {
 	createAdminDocumentStore,
 } from "./admin-documents.ts";
 import { readAdminImage } from "./admin-images.ts";
+import { readAdminUpload } from "./admin-uploads.ts";
 
 class AdminError extends Error {
 	code: string;
@@ -76,7 +77,15 @@ function shape(file: string, source: string, includeBody = false): AdminPost {
 }
 
 /** File store is independent of Vite so safety and preservation can be tested. */
-export function createAdminStore(contentDir: string, backupDir?: string, validateBody?: (file: string, body: string, previous: string) => Promise<void>): {
+export function createAdminStore(
+	contentDir: string,
+	backupDir?: string,
+	validateBody?: (
+		file: string,
+		body: string,
+		previous: string,
+	) => Promise<void>,
+): {
 	list(): Promise<AdminPost[]>;
 	read(file: string): Promise<AdminPost>;
 	save(input: AdminSave): Promise<AdminPost>;
@@ -173,7 +182,11 @@ export function createAdminStore(contentDir: string, backupDir?: string, validat
 			if (backupDir && !input.create) {
 				const backup = resolve(backupDir, input.file);
 				await mkdir(resolve(backup, ".."), { recursive: true, mode: 0o700 });
-				await writeFile(backup, original, { flag: "wx", mode: 0o600 }).catch(error => { if (error.code !== "EEXIST") throw error; });
+				await writeFile(backup, original, { flag: "wx", mode: 0o600 }).catch(
+					(error) => {
+						if (error.code !== "EEXIST") throw error;
+					},
+				);
 			}
 			for (const key of [
 				"title",
@@ -251,7 +264,11 @@ export interface AdminMiddlewareOptions {
 	afterSave?: () => Promise<void>;
 	documents?: ReturnType<typeof createAdminDocumentStore>;
 	backupDir?: string;
-	validateBody?: (file: string, body: string, previous: string) => Promise<void>;
+	validateBody?: (
+		file: string,
+		body: string,
+		previous: string,
+	) => Promise<void>;
 }
 export function createAdminMiddleware(
 	contentDir: string,
@@ -269,8 +286,13 @@ export function createAdminMiddleware(
 			throw new Error("An exact HTTPS admin origin is required");
 	}
 	const token = randomBytes(32).toString("hex");
-	const store = createAdminStore(contentDir, options.backupDir, options.validateBody);
-	const documents = options.documents ?? createAdminDocumentStore(documentPaths);
+	const store = createAdminStore(
+		contentDir,
+		options.backupDir,
+		options.validateBody,
+	);
+	const documents =
+		options.documents ?? createAdminDocumentStore(documentPaths);
 	const authFile =
 		options.authFile ??
 		join(
@@ -407,6 +429,11 @@ export function createAdminMiddleware(
 			if (pathname === "/__admin/api/post" && request.method === "GET")
 				return send(await store.read(url.searchParams.get("file") ?? ""));
 			if (request.method !== "POST") throw new AdminError("method", 405);
+			if (pathname === "/__admin/api/upload-image") {
+				if (request.headers.origin !== origin)
+					throw new AdminError("forbidden", 403);
+				return send(await readAdminUpload(request, projectRoot));
+			}
 			if (
 				!request.headers.origin ||
 				!request.headers["content-type"]?.startsWith("application/json")
@@ -482,10 +509,26 @@ export function shironesAdmin(
 		},
 		async configureServer(server) {
 			const dynamic = process.env.SHIRONE_DYNAMIC === "1";
-			const documents = dynamic ? (await import("../../runtime/settings-store.ts")).createRuntimeDocumentStore(documentPaths) : undefined;
-			const validateBody = dynamic ? (await import("../../runtime/post-validation.ts")).createRuntimePostValidator(projectRoot) : undefined;
+			const documents = dynamic
+				? (
+						await import("../../runtime/settings-store.ts")
+					).createRuntimeDocumentStore(documentPaths)
+				: undefined;
+			const validateBody = dynamic
+				? (
+						await import("../../runtime/post-validation.ts")
+					).createRuntimePostValidator(projectRoot)
+				: undefined;
 			server.middlewares.use(
-				createAdminMiddleware(contentDir, projectRoot, documentPaths, { documents, validateBody, ...(dynamic ? { backupDir: join(projectRoot, ".shirones/runtime/backups/posts") } : {}) }),
+				createAdminMiddleware(contentDir, projectRoot, documentPaths, {
+					documents,
+					validateBody,
+					...(dynamic
+						? {
+								backupDir: join(projectRoot, ".shirones/runtime/backups/posts"),
+							}
+						: {}),
+				}),
 			);
 		},
 	};

@@ -83,3 +83,6 @@ artifacts/shirone-ai-*
 # Private local admin credentials (also denied by Vite .env.* rules)
 .env.shirone-admin-auth
 .env.shirone-admin-test-auth
+
+# Runtime image uploads are user data, preserved separately from deployment code.
+public/uploads/admin/

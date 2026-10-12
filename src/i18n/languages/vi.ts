@@ -2,14 +2,30 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const vi: Translation = {
-	[Key.adminDynamicFieldsHint]: "Edit structured settings below. Changes apply on the next visit. Source code and disabled deployment fields require a project rebuild.",
-	[Key.adminDynamicHint]: "Live editing · saved content applies on the next visit without rebuilding",
-	[Key.adminDynamicSaved]: "Saved. The next visit will read the latest content.",
+	[Key.adminUploadImage]: "Tải ảnh lên",
+	[Key.adminUploadingImage]: "Đang tải lên…",
+	[Key.adminUploadHint]:
+		"PNG/JPG/WebP/AVIF/GIF, tối đa 20 MB. Lưu để áp dụng ảnh.",
+	[Key.adminImagePathOptions]: "Dùng URL hoặc đường dẫn ảnh (nâng cao)",
+	[Key.adminImagePath]: "URL hoặc đường dẫn ảnh",
+	[Key.adminRemoveImage]: "Xóa ảnh",
+	[Key.adminUploadInvalid]: "Chọn ảnh PNG/JPG/WebP/AVIF/GIF hợp lệ.",
+	[Key.adminUploadSize]: "Ảnh không được vượt quá 20 MB.",
+	[Key.adminUploadFailed]: "Tải lên thất bại. Kiểm tra đăng nhập hoặc thử lại.",
+	[Key.adminDynamicFieldsHint]:
+		"Edit structured settings below. Changes apply on the next visit. Source code and disabled deployment fields require a project rebuild.",
+	[Key.adminDynamicHint]:
+		"Live editing · saved content applies on the next visit without rebuilding",
+	[Key.adminDynamicSaved]:
+		"Saved. The next visit will read the latest content.",
 	[Key.adminBackgroundTheme]: "Follow theme",
 	[Key.adminBackgroundSolid]: "Custom solid color",
-	[Key.adminUnsupportedMdx]: "New MDX component imports require a deployment build. Changes were not saved; reuse deployed imports.",
-	[Key.adminDeploymentHint]: "Deployment setting: rebuild or restart after changes. Runtime settings do not accept TypeScript source edits.",
-	[Key.adminDeploymentSaved]: "Deployment setting saved. Rebuild or restart to apply.",
+	[Key.adminUnsupportedMdx]:
+		"New MDX component imports require a deployment build. Changes were not saved; reuse deployed imports.",
+	[Key.adminDeploymentHint]:
+		"Deployment setting: rebuild or restart after changes. Runtime settings do not accept TypeScript source edits.",
+	[Key.adminDeploymentSaved]:
+		"Deployment setting saved. Rebuild or restart to apply.",
 	[Key.adminDomainRuntimeAppearance]: "Live appearance",
 	[Key.adminAttrBodyFontSize]: "Base body font size (px)",
 	[Key.adminAttrTitleFontScale]: "Title font scale",

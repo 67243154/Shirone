@@ -66,8 +66,17 @@ const server = createServer(async (request, response) => {
 		const pathname = decodeURIComponent(
 			new URL(request.url ?? "/", "http://localhost").pathname,
 		);
-		const file = resolve(client, `.${pathname}`);
-		const suffix = relative(client, file);
+		const liveUpload = pathname.startsWith("/uploads/admin/");
+		if (
+			liveUpload &&
+			!/^\/uploads\/admin\/[a-f0-9]{64}\.webp$/.test(pathname)
+		) {
+			response.writeHead(404);
+			return response.end();
+		}
+		const assetRoot = liveUpload ? join(root, "public") : client;
+		const file = resolve(assetRoot, `.${pathname}`);
+		const suffix = relative(assetRoot, file);
 		if (
 			suffix.startsWith("..") ||
 			isAbsolute(suffix) ||
@@ -80,7 +89,7 @@ const server = createServer(async (request, response) => {
 			const info = await stat(file);
 			if (info.isFile()) {
 				if (
-					relative(await realpath(client), await realpath(file)).startsWith(
+					relative(await realpath(assetRoot), await realpath(file)).startsWith(
 						"..",
 					)
 				)
@@ -88,9 +97,10 @@ const server = createServer(async (request, response) => {
 				return await sendStaticFile(request, response, file, info, {
 					"Content-Type": mime[extname(file)] ?? "application/octet-stream",
 					"X-Content-Type-Options": "nosniff",
-					"Cache-Control": pathname.startsWith("/_astro/")
-						? "public,max-age=31536000,immutable"
-						: "public,max-age=600",
+					"Cache-Control":
+						liveUpload || pathname.startsWith("/_astro/")
+							? "public,max-age=31536000,immutable"
+							: "public,max-age=600",
 				});
 			}
 		} catch (error) {

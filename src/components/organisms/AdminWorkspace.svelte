@@ -2,7 +2,7 @@
 import Button from "@components/atoms/action/Button.svelte";
 import TextField from "@components/atoms/input/TextField.svelte";
 import Switch from "@components/atoms/selection/Switch.svelte";
-import AdminImagePreview from "@components/molecules/AdminImagePreview.svelte";
+import AdminImageField from "@components/molecules/AdminImageField.svelte";
 import AdminSettings from "@components/organisms/AdminSettings.svelte";
 import { url } from "@utils/url-utils";
 import { onMount, tick } from "svelte";
@@ -11,8 +11,11 @@ import { i18n } from "@/i18n/translation";
 import type { AdminPost, AdminSave } from "@/types/admin";
 import { adminStyles } from "./admin.styles";
 
-let { local = false, remote = false, dynamic = false }: { local?: boolean; remote?: boolean; dynamic?: boolean } =
-	$props();
+let {
+	local = false,
+	remote = false,
+	dynamic = false,
+}: { local?: boolean; remote?: boolean; dynamic?: boolean } = $props();
 let locale = $state("zh_CN");
 const t = (key: I18nKey): string => i18n(key, locale);
 let posts = $state<AdminPost[]>([]);
@@ -21,6 +24,7 @@ let filter = $state("all");
 let group = $state("posts");
 let settingsDirty = $state(false);
 let settingsSaving = $state(false);
+let imageUploads = $state(0);
 let loading = $state(local);
 let saving = $state(false);
 let message = $state("");
@@ -79,15 +83,28 @@ function errorKey(code: string): I18nKey {
 async function api<T>(path: string, data?: unknown): Promise<T> {
 	if (!path.startsWith("auth/") && path !== "session" && !token)
 		token = (await api<{ token: string }>("session")).token;
+	const binary = data instanceof Blob;
 	const response = await fetch(`/__admin/api/${path}`, {
 		method: data ? "POST" : "GET",
 		headers: {
 			"X-Shirone-Admin": token,
-			...(data ? { "Content-Type": "application/json" } : {}),
+			...(data
+				? {
+						"Content-Type": binary
+							? (data as Blob).type || "application/octet-stream"
+							: "application/json",
+					}
+				: {}),
 		},
-		...(data ? { body: JSON.stringify(data) } : {}),
+		...(data ? { body: binary ? (data as Blob) : JSON.stringify(data) } : {}),
 		signal: AbortSignal.timeout(
-			remote && data ? 540000 : path === "document" && data ? 45000 : 15000,
+			path === "upload-image" && data
+				? 120000
+				: remote && data
+					? 540000
+					: path === "document" && data
+						? 45000
+						: 15000,
 		),
 	});
 	const result = await response.json();
@@ -106,6 +123,14 @@ async function api<T>(path: string, data?: unknown): Promise<T> {
 			details: result.details,
 		});
 	return result as T;
+}
+async function uploadImage(file: File): Promise<string> {
+	imageUploads += 1;
+	try {
+		return (await api<{ path: string }>("upload-image", file)).path;
+	} finally {
+		imageUploads -= 1;
+	}
 }
 async function checkAuth() {
 	authChecking = true;
@@ -235,7 +260,7 @@ async function open(post?: AdminPost) {
 	}
 }
 function back() {
-	if (saving) return;
+	if (saving || imageUploads > 0) return;
 	if (dirty && !window.confirm(t(I18nKey.adminUnsaved))) return;
 	form = null;
 	message = "";
@@ -244,7 +269,7 @@ function back() {
 }
 async function save(event: SubmitEvent) {
 	event.preventDefault();
-	if (!form || saving) return;
+	if (!form || saving || imageUploads > 0) return;
 	saving = true;
 	error = null;
 	message = "";
@@ -262,7 +287,13 @@ async function save(event: SubmitEvent) {
 		form = { ...saved, create: false };
 		tagInput = saved.tags.join(", ");
 		original = JSON.stringify(form);
-		message = t(dynamic ? I18nKey.adminDynamicSaved : remote ? I18nKey.adminServerSaved : I18nKey.adminSaved);
+		message = t(
+			dynamic
+				? I18nKey.adminDynamicSaved
+				: remote
+					? I18nKey.adminServerSaved
+					: I18nKey.adminSaved,
+		);
 		await refresh();
 	} catch (issue) {
 		if (active) error = errorKey((issue as Error).message);
@@ -344,13 +375,13 @@ onMount(() => {
   <p class="admin-eyebrow">{t(I18nKey.adminOverview)}</p>
   <nav aria-label={t(I18nKey.adminTitle)}>
    {#each [["all", I18nKey.adminPosts, posts.length, "posts"], ["draft", I18nKey.adminDrafts, draftCount, "draft"], ["published", I18nKey.adminPublished, posts.length - draftCount, "published"]] as item}
-    <button class="admin-nav-item m3-state-layer" disabled={saving || settingsSaving} class:active={group === "posts" && filter === item[0] && !form} aria-pressed={group === "posts" && filter === item[0] && !form}
+    <button class="admin-nav-item m3-state-layer" disabled={saving || settingsSaving || imageUploads > 0} class:active={group === "posts" && filter === item[0] && !form} aria-pressed={group === "posts" && filter === item[0] && !form}
      onclick={() => { if (dirty && !window.confirm(t(I18nKey.adminUnsaved))) return; group = "posts"; form = null; filter = String(item[0]); error = null; message = ""; }}>
      {@render symbol(String(item[3]))}<span>{t(item[1] as I18nKey)}</span><span class="admin-count">{local ? item[2] : "—"}</span>
     </button>
    {/each}
    {#each [["settings", I18nKey.adminSettings], ["appearance", I18nKey.adminAppearance], ["features", I18nKey.adminFeatures], ["data", I18nKey.adminData], ["advanced", I18nKey.adminAdvanced]] as item}
-    <button class="admin-nav-item m3-state-layer" disabled={saving || settingsSaving} class:active={group === item[0]} aria-pressed={group === item[0]} onclick={() => { if (dirty && !window.confirm(t(I18nKey.adminUnsaved))) return; form = null; group = String(item[0]); error = null; message = ""; }}>
+    <button class="admin-nav-item m3-state-layer" disabled={saving || settingsSaving || imageUploads > 0} class:active={group === item[0]} aria-pressed={group === item[0]} onclick={() => { if (dirty && !window.confirm(t(I18nKey.adminUnsaved))) return; form = null; group = String(item[0]); error = null; message = ""; }}>
      {@render symbol("settings")}<span>{t(item[1] as I18nKey)}</span>
     </button>
    {/each}
@@ -358,14 +389,14 @@ onMount(() => {
   <a class="admin-return m3-state-layer" data-no-swup href={url("/")}>{t(I18nKey.adminReturn)}<span aria-hidden="true">↗</span></a>
  </aside>
  <main class="admin-main" id="admin-main" data-pagefind-ignore>
-  {#if local}<div class="admin-auth-actions"><Button variant="text" label={t(I18nKey.adminAuthLogout)} disabled={saving || settingsSaving} onclick={() => void logout()} /></div>{/if}
+  {#if local}<div class="admin-auth-actions"><Button variant="text" label={t(I18nKey.adminAuthLogout)} disabled={saving || settingsSaving || imageUploads > 0} onclick={() => void logout()} /></div>{/if}
   {#if group !== "posts"}
-   {#key group}<AdminSettings {group} {locale} {local} {remote} {dynamic} {api} bind:dirty={settingsDirty} bind:saving={settingsSaving} />{/key}
+   {#key group}<AdminSettings {group} {locale} {local} {remote} {dynamic} {api} {uploadImage} uploading={imageUploads > 0} bind:dirty={settingsDirty} bind:saving={settingsSaving} />{/key}
   {:else if form}
    <Button variant="text" label={t(I18nKey.adminBack)} onclick={back} />
    <form onsubmit={save} class="admin-editor">
     <div class="admin-heading"><div><p class="admin-eyebrow">{t(I18nKey.adminOverview)}</p><h1>{t(form.create ? I18nKey.adminNewPost : I18nKey.adminEdit)}</h1></div>
-     <Button type="submit" disabled={saving} label={t(saving ? I18nKey.adminSaving : I18nKey.adminSave)} />
+     <Button type="submit" disabled={saving || imageUploads > 0} label={t(saving ? I18nKey.adminSaving : I18nKey.adminSave)} />
     </div>
     <div class="admin-editor-grid">
      <section class="admin-panel admin-writing">
@@ -386,7 +417,7 @@ onMount(() => {
       <label for="post-date">{t(I18nKey.publishedAt)}</label><input id="post-date" type="date" required bind:value={form.published} />
       <label for="post-category">{t(I18nKey.adminCategory)}</label><input id="post-category" bind:value={form.category} />
       <label for="post-tags">{t(I18nKey.tags)}</label><input id="post-tags" bind:value={tagInput} />
-      <label for="post-image">{t(I18nKey.adminImage)}</label><input id="post-image" bind:value={form.image} /><AdminImagePreview value={form.image} {locale} post={form.file} />
+      <span>{t(I18nKey.adminImage)}</span><AdminImageField bind:value={form.image} label={t(I18nKey.adminImage)} {locale} post={form.file} {uploadImage} disabled={saving || imageUploads > 0} />
       <div class="admin-toggle"><span>{t(I18nKey.adminDraft)}</span><Switch bind:checked={form.draft} label={t(I18nKey.adminDraft)} /></div>
       <div class="admin-toggle"><span>{t(I18nKey.adminPinned)}</span><Switch bind:checked={form.pinned} label={t(I18nKey.adminPinned)} /></div>
      </section>

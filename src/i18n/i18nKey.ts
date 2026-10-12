@@ -1,4 +1,13 @@
 enum I18nKey {
+	adminUploadImage = "adminUploadImage",
+	adminUploadingImage = "adminUploadingImage",
+	adminUploadHint = "adminUploadHint",
+	adminImagePathOptions = "adminImagePathOptions",
+	adminImagePath = "adminImagePath",
+	adminRemoveImage = "adminRemoveImage",
+	adminUploadInvalid = "adminUploadInvalid",
+	adminUploadSize = "adminUploadSize",
+	adminUploadFailed = "adminUploadFailed",
 	adminUnsupportedMdx = "adminUnsupportedMdx",
 	adminBackgroundTheme = "adminBackgroundTheme",
 	adminBackgroundSolid = "adminBackgroundSolid",

@@ -6,10 +6,26 @@ import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { getSortedPostsList } from "../utils/content-utils";
 
 const sortedPostsList = await getSortedPostsList();
-const archiveSummary = `${sortedPostsList.length} ${i18n(I18nKey.postsCount)}`;
+const params = Astro.url.searchParams;
+const initialFilter = {
+	category: params.get("category") || "",
+	tag: params.get("tag") || "",
+	uncategorized: params.has("uncategorized"),
+};
+const selectedPosts = sortedPostsList.filter(
+	({ data }) =>
+		(!initialFilter.uncategorized || !data.category) &&
+		(!initialFilter.category || data.category === initialFilter.category) &&
+		(!initialFilter.tag || data.tags.includes(initialFilter.tag)),
+);
+const archiveTitle = initialFilter.uncategorized
+	? i18n(I18nKey.uncategorized)
+	: initialFilter.category ||
+		(initialFilter.tag ? `#${initialFilter.tag}` : i18n(I18nKey.archive));
+const archiveSummary = `${selectedPosts.length} ${i18n(selectedPosts.length === 1 ? I18nKey.postCount : I18nKey.postsCount)}`;
 ---
 
-<MainGridLayout title={i18n(I18nKey.archive)} description={archiveSummary} page="archive">
-    <ArchivePanel sortedPosts={sortedPostsList} client:visible></ArchivePanel>
+<MainGridLayout title={archiveTitle} description={archiveSummary} page="archive">
+    <ArchivePanel sortedPosts={sortedPostsList} {initialFilter} client:visible></ArchivePanel>
 </MainGridLayout>
 

@@ -1,10 +1,18 @@
 /** Image fields can contain source assets, public paths or remote URLs. */
+export function isAdminImageField(field: string, value: unknown = ""): boolean {
+	const path = field.replace(/\[\d+\]/g, "");
+	return (
+		/(?:^|\.)(?:image|images|avatar|cover|poster|thumbnail|backgroundImage|imgurl|logo|src|favicon|photos|pictures|screenshots|portrait|coverImage|bannerImage)$/i.test(
+			path,
+		) ||
+		/\.src(?:\.(?:desktop|mobile|light|dark))+$/.test(path) ||
+		(typeof value === "string" &&
+			/\.(?:png|jpe?g|webp|avif|gif|svg|ico)(?:[?#]|$)/i.test(value))
+	);
+}
 export function adminImageValues(value: unknown, field: string): string[] {
 	if (typeof value === "string") {
-		const imageField =
-			/(?:^|\.)(?:image|images|avatar|cover|poster|thumbnail|backgroundImage|imgurl|logo|src|favicon)$/i.test(
-				field,
-			) || /\.src\.(?:desktop|mobile)$/i.test(field);
+		const imageField = isAdminImageField(field, value);
 		return value.trim() &&
 			(imageField ||
 				/\.(?:png|jpe?g|webp|avif|gif|svg|ico)(?:[?#]|$)/i.test(value))

@@ -16,7 +16,7 @@ import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
 import { formatCalendarDate } from "@utils/content-date";
 import { getPostUrlBySlug, url } from "@utils/url-utils";
-import { onMount } from "svelte";
+import { onMount, untrack } from "svelte";
 
 interface Post {
 	slug: string;
@@ -29,11 +29,17 @@ interface Post {
 	};
 }
 
-let { sortedPosts = [] as Post[] }: { sortedPosts?: Post[] } = $props();
+let {
+	sortedPosts = [] as Post[],
+	initialFilter = { category: "", tag: "", uncategorized: false },
+}: {
+	sortedPosts?: Post[];
+	initialFilter?: { category: string; tag: string; uncategorized: boolean };
+} = $props();
 
-let category = $state("");
-let tag = $state("");
-let uncategorized = $state(false);
+let category = $state(untrack(() => initialFilter.category));
+let tag = $state(untrack(() => initialFilter.tag));
+let uncategorized = $state(untrack(() => initialFilter.uncategorized));
 /** 分组维度（SegmentedButton 驱动）：year / category / tag，string 以匹配 bind:value */
 let groupBy = $state<string>("year");
 let restoredCollapsed = $state<Record<string, boolean> | undefined>(undefined);
@@ -179,6 +185,16 @@ $effect(() => {
 	tag;
 	uncategorized;
 	if (typeof window !== "undefined") readCollapsedState();
+});
+
+// Static/package builds read query filters after hydration; the persistent
+// banner must receive the same selection and count as the archive list.
+$effect(() => {
+	const container = document.getElementById("swup-container");
+	if (container?.dataset.currentPage !== "archive") return;
+	container.dataset.bannerTitle = filterCrumb?.value || i18n(I18nKey.archive);
+	container.dataset.bannerDescription = countLabel(filtered.length);
+	document.dispatchEvent(new Event("shirone:archive-filter-change"));
 });
 </script>
 

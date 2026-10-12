@@ -109,17 +109,22 @@ if (!lang) {
 const siteLang = lang.replace("_", "-");
 const fontRoleStyle = createFontRoleStyle(resolvedFontOptions);
 const customFontsEnabled = resolvedFontOptions.mode === "custom";
-const runtimeStyle = import.meta.env.SHIRONE_DYNAMIC === "1" ? [
- `--runtime-body-size:${runtimeAppearanceConfig.bodyFontSize}px`,
- `--runtime-body-mobile:${runtimeAppearanceConfig.bodyFontSize * 0.875}px`,
- `--shape-corner-l:${runtimeAppearanceConfig.cornerRadius}px`,
- `--shape-corner-xl:${runtimeAppearanceConfig.cornerRadius + 12}px`,
- `--m3e-type-headline-large:400 ${2 * runtimeAppearanceConfig.titleFontScale}rem/1.25 var(--font-sans)`,
- `--m3e-type-headline-medium:400 ${1.75 * runtimeAppearanceConfig.titleFontScale}rem/2.25rem var(--font-sans)`,
- `--m3e-type-headline-small:400 ${1.5 * runtimeAppearanceConfig.titleFontScale}rem/2rem var(--font-sans)`,
- `--m3e-type-title-large:400 ${1.375 * runtimeAppearanceConfig.titleFontScale}rem/1.75rem var(--font-sans)`,
- ...(runtimeAppearanceConfig.background === "solid" ? [`--page-bg:${runtimeAppearanceConfig.backgroundColor}`] : []),
-].join(";") : undefined;
+const runtimeStyle =
+	import.meta.env.SHIRONE_DYNAMIC === "1"
+		? [
+				`--runtime-body-size:${runtimeAppearanceConfig.bodyFontSize}px`,
+				`--runtime-body-mobile:${runtimeAppearanceConfig.bodyFontSize * 0.875}px`,
+				`--shape-corner-l:${runtimeAppearanceConfig.cornerRadius}px`,
+				`--shape-corner-xl:${runtimeAppearanceConfig.cornerRadius + 12}px`,
+				`--m3e-type-headline-large:400 ${2 * runtimeAppearanceConfig.titleFontScale}rem/1.25 var(--font-sans)`,
+				`--m3e-type-headline-medium:400 ${1.75 * runtimeAppearanceConfig.titleFontScale}rem/2.25rem var(--font-sans)`,
+				`--m3e-type-headline-small:400 ${1.5 * runtimeAppearanceConfig.titleFontScale}rem/2rem var(--font-sans)`,
+				`--m3e-type-title-large:400 ${1.375 * runtimeAppearanceConfig.titleFontScale}rem/1.75rem var(--font-sans)`,
+				...(runtimeAppearanceConfig.background === "solid"
+					? [`--page-bg:${runtimeAppearanceConfig.backgroundColor}`]
+					: []),
+			].join(";")
+		: undefined;
 const hasBodyFont =
 	customFontsEnabled && Boolean(resolvedFontOptions.roles.body.family);
 const hasCjkFont =
@@ -350,6 +355,55 @@ const setup = () => {
 		}, 200);
 	}
 	window.swup.hooks.on('link:click', () => document.documentElement.style.setProperty('--content-delay', '0ms'));
+	const defaultLinkToSelf = window.swup.options.linkToSelf;
+	window.swup.hooks.before('link:click', (_visit: unknown, { el }: { el: HTMLAnchorElement }) => {
+		// Selected feed/sidebar buttons should follow the same content navigation
+		// as other buttons instead of Swup's default same-page scroll-to-top.
+		window.swup!.options.linkToSelf = el.closest('#category-bar, #categories, #series, #tags')
+			? 'navigate' : defaultLinkToSelf;
+	});
+	type ContentVisit = {
+		to: { hash?: string }; history: { popstate: boolean };
+		trigger: { el?: Element }; scroll: { reset: boolean };
+	};
+	function positionsContent(visit: ContentVisit) {
+		return !visit.history.popstate && !visit.to.hash && (
+			document.getElementById('swup-container')?.dataset.currentPage === 'post' ||
+			Boolean(visit.trigger.el?.closest('#category-bar, #categories, #series, #tags'))
+		);
+	}
+	// Feed, taxonomy and article navigation share the content starting point.
+	// Keep history restoration and explicit heading anchors unchanged.
+	window.swup.hooks.before('content:scroll', (visit: {
+		to: { hash?: string }; history: { popstate: boolean }; trigger: { el?: Element }; scroll: { reset: boolean };
+	}) => {
+		if (positionsContent(visit)) visit.scroll.reset = false;
+	});
+	window.swup.hooks.on('page:view', async (visit: ContentVisit) => {
+		if (!positionsContent(visit)) return;
+		await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+		// Mobile removes the home banner with a transition of the main layout's
+		// top position. Measure the reading card only after that transition ends.
+		const layoutAnimations = document.getElementById('main-layout')?.getAnimations() || [];
+		await Promise.allSettled(layoutAnimations.map(animation => animation.finished));
+		const container = document.getElementById('swup-container');
+		const categoryBar = document.getElementById('category-bar');
+		const target = categoryBar?.getClientRects().length ? categoryBar : container;
+		if (!target) return;
+		const banner = document.getElementById('banner-wrapper');
+		const bannerBottom = banner && !banner.hidden ? banner.getBoundingClientRect().bottom + window.scrollY : 0;
+		const navbarHeight = document.getElementById('navbar')?.getBoundingClientRect().height || 0;
+		// Short series/filter pages still need enough height to reach the same
+		// content position; otherwise the browser clamps scrolling to the footer.
+		if (container) container.style.minHeight = `${Math.max(0, window.innerHeight - navbarHeight - (categoryBar?.getClientRects().length ? categoryBar.offsetHeight : 0))}px`;
+		const top = Math.max(0, bannerBottom - navbarHeight, target.getBoundingClientRect().top + window.scrollY - navbarHeight);
+		// Start after page:view handlers finish so focus restoration cannot
+		// interrupt the browser's smooth scroll before its first frame.
+		requestAnimationFrame(() => window.scrollTo({
+			top, left: window.scrollX,
+			behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+		}));
+	});
 	window.swup.hooks.on('visit:start', () => {
 		window.clearTimeout(finishTimer);
 		visitActive = true;
