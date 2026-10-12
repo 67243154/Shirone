@@ -2,6 +2,8 @@
 
 The public site remains static. The server runs the existing post/config/image
 stores and scrypt authentication through an independent loopback Node service.
+Build output is staged inside `/opt/shirone/app/.shirones` before copying to the
+public release directory. This avoids cross-mount renames under systemd isolation.
 Saving in `/admin/` queues an Astro + Pagefind build and atomically switches the
 public release on success. A failed build keeps the previous live release;
 source changes remain saved and the editor reports publication failure.
