@@ -4,6 +4,11 @@
  * 文章跑 render 提取 remark 字数，不做缓存会逐页重复开销）。
  */
 import { render } from "astro:content";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkDirective from "remark-directive";
+import { toString } from "mdast-util-to-string";
+import getReadingTime from "reading-time";
 import { seriesConfig } from "../config/seriesConfig.ts";
 import {
 	getCategoryList,
@@ -31,9 +36,12 @@ export interface SiteStats {
 const DAY_MS = 86_400_000;
 
 let cache: SiteStats | null = null;
+let cacheSignature = "";
+const wordParser = unified().use(remarkParse).use(remarkDirective);
 
 export async function getSiteStats(): Promise<SiteStats> {
-	if (cache) return cache;
+	const dynamic = import.meta.env?.SHIRONE_DYNAMIC === "1";
+	if (cache && !dynamic) return cache;
 
 	const [posts, moments, categories, tags, seriesCatalog] = await Promise.all([
 		getSortedPosts(),
@@ -43,14 +51,19 @@ export async function getSiteStats(): Promise<SiteStats> {
 		// 功能关闭时不查集合（SiteStats 也不产出系列行）
 		seriesConfig.enable ? getSeriesCatalog() : Promise.resolve(null),
 	]);
+	const signature = dynamic ? JSON.stringify([posts.map(post => [post.id, post.body, post.data]), moments, categories, tags, seriesCatalog ? [...seriesCatalog.keys()] : [], Math.floor(Date.now()/DAY_MS)]) : "";
+	if (dynamic && cache && signature === cacheSignature) return cache;
 
 	// 总字数、最早发布日与最近更新日来自同一批文章，一次遍历
 	let words = 0;
 	let earliest = Number.POSITIVE_INFINITY;
 	let latestActivity = 0;
 	for (const post of posts) {
-		const { remarkPluginFrontmatter } = await render(post);
-		words += remarkPluginFrontmatter.words ?? 0;
+		if (dynamic) words += getReadingTime(toString(wordParser.parse(post.body ?? ""))).words;
+		else {
+			const { remarkPluginFrontmatter } = await render(post);
+			words += remarkPluginFrontmatter.words ?? 0;
+		}
 		const published = new Date(post.data.published).getTime();
 		if (published < earliest) earliest = published;
 		const updated = post.data.updated
@@ -73,5 +86,6 @@ export async function getSiteStats(): Promise<SiteStats> {
 		lastActivity:
 			latestActivity > 0 ? new Date(latestActivity).toISOString() : null,
 	};
+	cacheSignature = signature;
 	return cache;
 }

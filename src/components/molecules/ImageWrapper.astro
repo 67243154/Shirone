@@ -5,6 +5,7 @@ import { imageBloomConfig } from "@/config";
 import { getBloomInlineVars } from "../../utils/image-bloom";
 import { getProjectImageLoader } from "../../utils/project-images";
 import { url } from "../../utils/url-utils";
+import { runtimeImageUrl } from "../../runtime/image-url";
 
 interface Props {
 	id?: string;
@@ -24,7 +25,7 @@ interface Props {
 
 const {
 	id,
-	src,
+	src: originalSrc,
 	alt,
 	position = "center",
 	basePath = "/",
@@ -37,6 +38,7 @@ const {
 	quality,
 } = Astro.props;
 const className = Astro.props.class;
+const src = import.meta.env.SHIRONE_DYNAMIC === "1" ? runtimeImageUrl(originalSrc, basePath) : originalSrc;
 
 const isLocal = !(
 	src.startsWith("/") ||

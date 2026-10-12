@@ -50,7 +50,7 @@ export function comparePublishedDatesAscending(
 export function initPostIdMap(
 	posts: Array<PostLikeForIdMap>,
 ): Map<string, number> {
-	if (postIdMap) {
+	if (postIdMap && import.meta.env?.SHIRONE_DYNAMIC !== "1") {
 		return postIdMap;
 	}
 

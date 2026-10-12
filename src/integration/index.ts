@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -168,9 +169,26 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				updateConfig,
 				injectRoute,
 				addWatchFile,
+				addMiddleware,
 				logger,
 			}) => {
 				paths = resolvePaths(options, config.root, import.meta.url);
+				const dynamic = process.env.SHIRONE_DYNAMIC === "1";
+				const runtimeAdapter = dynamic ? (await import("@astrojs/node")).default({ mode: "middleware", experimentalDisableStreaming: true }) : undefined;
+				if (dynamic) {
+					if (!paths.isThemeRepo) throw new Error("Dynamic mode currently requires a source checkout; ordinary npm mode remains static.");
+					const source = join(paths.projectRoot, ".shirones", "dynamic-src");
+					await mkdir(join(source, "pages"), { recursive: true });
+					await writeFile(join(source, "content.config.ts"), `export {collections} from ${JSON.stringify(join(paths.packageSrc, "content.config.ts"))};\n`);
+					updateConfig({ output: "server", srcDir: pathToFileURL(`${source}/`), adapter: runtimeAdapter, vite: { define: { "import.meta.env.SHIRONE_DYNAMIC": JSON.stringify("1") } } });
+					addMiddleware({ entrypoint: join(paths.packageSrc, "runtime", "middleware.ts"), order: "pre" });
+					for (const route of collectRoutes(join(paths.packageSrc, "pages"))) {
+						if (["/[...page]", "/[...permalink]"].includes(route.pattern)) continue;
+						injectRoute({ pattern: route.pattern, entrypoint: route.entrypoint, prerender: false });
+					}
+					injectRoute({ pattern: "/[...path]", entrypoint: join(paths.packageSrc, "runtime", "Router.astro"), prerender: false });
+					for (const endpoint of ["search", "assets", "image"]) injectRoute({ pattern: `/__content/${endpoint}`, entrypoint: join(paths.packageSrc, "runtime", "endpoints", `${endpoint}.ts`), prerender: false });
+				}
 
 				logger.info(
 					`${paths.isThemeRepo ? "theme repository" : "installed package"} mode | content: ${paths.contentDir}`,
@@ -295,7 +313,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 						// Subsetting only on `build` keeps `astro dev` free of the
 						// charset scan; `fonts.ts` additionally requires
 						// `fontConfig.subsetting.enable`, so both must hold.
-						subset: options.fonts?.subset ?? command === "build",
+						subset: !dynamic && (options.fonts?.subset ?? command === "build"),
 						extraCharacters: options.fonts?.extraCharacters ?? "",
 					},
 					{
@@ -338,11 +356,12 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					trailingSlash: TRAILING_SLASH,
 					image: { endpoint: { route: IMAGE_ENDPOINT_ROUTE } },
 					fonts: fonts as never,
-					integrations,
+					integrations: [...integrations, ...(runtimeAdapter ? [runtimeAdapter] : [])],
 					markdown: { processor: processor as never },
 					vite: {
 						resolve: { alias: createAliases(paths) },
 						plugins: [
+							...(dynamic ? [(await import("./vite/runtime.ts")).shironesRuntime(paths)] : []),
 							...(adminEnabled
 								? [
 										(await import("./vite/admin.ts")).shironesAdmin(
@@ -374,7 +393,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							shironesIconRegeneration(paths, logger),
 							shironesThumbnailsRegeneration(paths),
 							shironesSsrNodeShims(),
-							createMusicSidebarPlugin(paths, musicEnabled),
+							createMusicSidebarPlugin(paths, musicEnabled || dynamic),
 							(await import("@tailwindcss/vite")).default(),
 						],
 						optimizeDeps: {
@@ -590,7 +609,7 @@ async function createBundledIntegrations(
 
 	return [
 		...(oddmiscIntegration ? [oddmiscIntegration] : []),
-		swup({ ...swupOptions, ...swupForwardOptions }),
+		swup({ ...swupOptions, ...swupForwardOptions, ...(process.env.SHIRONE_DYNAMIC === "1" ? { cache: false, preload: false } : {}) }),
 		icon({ include: iconInclude }),
 		expressiveCode({
 			// `themes` is built here rather than shared: it reads

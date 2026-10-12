@@ -141,7 +141,9 @@ export async function getStaticPaths() {
 	return paths;
 }
 
-const { entry, discovery, series } = Astro.props;
+const runtimeProps = !Astro.props.entry && import.meta.env.SHIRONE_DYNAMIC === "1" ? (await getStaticPaths()).find(route => route.params.slug === Astro.params.slug)?.props : undefined;
+const { entry, discovery = { related: [], random: [] }, series = null } = Astro.props.entry ? Astro.props : runtimeProps ?? {};
+if (!entry) { Astro.response.status = 404; return Astro.rewrite("/404/"); }
 const seriesCardAtTop = seriesConfig.cardPosition !== "bottom";
 const isEncrypted = Boolean(
 	entry.data.password && entry.data.password.trim().length > 0,

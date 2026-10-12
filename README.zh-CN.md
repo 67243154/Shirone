@@ -8,6 +8,8 @@
 
 为长文写作、个人收藏，以及让网站真正属于你的细节而生的安静阅读空间。
 
+本地动态后台模式：`pnpm.cmd runtime:build` 后执行 `pnpm.cmd runtime:start`，访问 `http://127.0.0.1:4326/admin/`。文章和日常配置保存无需重建，具体边界与备份说明见 [动态运行说明](./docs/dynamic-runtime.md)。普通静态构建工作流仍保留。
+
 [在线预览](https://shirone.mysqil.com/) · [项目文档](https://docs.shirone.mysqil.com/) · [反馈问题](https://github.com/LyraVoid/Shirone/issues)
 
 [English](./README.md) · [简体中文](./README.zh-CN.md) · [繁體中文](./README.zh-TW.md) · [日本語](./README.ja.md)

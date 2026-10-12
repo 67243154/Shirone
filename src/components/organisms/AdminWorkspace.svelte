@@ -11,7 +11,7 @@ import { i18n } from "@/i18n/translation";
 import type { AdminPost, AdminSave } from "@/types/admin";
 import { adminStyles } from "./admin.styles";
 
-let { local = false, remote = false }: { local?: boolean; remote?: boolean } =
+let { local = false, remote = false, dynamic = false }: { local?: boolean; remote?: boolean; dynamic?: boolean } =
 	$props();
 let locale = $state("zh_CN");
 const t = (key: I18nKey): string => i18n(key, locale);
@@ -70,6 +70,8 @@ function errorKey(code: string): I18nKey {
 	if (code === "exists") return I18nKey.adminExists;
 	if (code === "external") return I18nKey.adminExternal;
 	if (code === "publish") return I18nKey.adminPublishFailed;
+	if (code === "deploymentRequired") return I18nKey.adminDeploymentHint;
+	if (code === "unsupportedMdx") return I18nKey.adminUnsupportedMdx;
 	if (["validation", "slug", "path", "size"].includes(code))
 		return I18nKey.adminInvalid;
 	return I18nKey.adminUnavailable;
@@ -260,7 +262,7 @@ async function save(event: SubmitEvent) {
 		form = { ...saved, create: false };
 		tagInput = saved.tags.join(", ");
 		original = JSON.stringify(form);
-		message = t(remote ? I18nKey.adminServerSaved : I18nKey.adminSaved);
+		message = t(dynamic ? I18nKey.adminDynamicSaved : remote ? I18nKey.adminServerSaved : I18nKey.adminSaved);
 		await refresh();
 	} catch (issue) {
 		if (active) error = errorKey((issue as Error).message);
@@ -358,7 +360,7 @@ onMount(() => {
  <main class="admin-main" id="admin-main" data-pagefind-ignore>
   {#if local}<div class="admin-auth-actions"><Button variant="text" label={t(I18nKey.adminAuthLogout)} disabled={saving || settingsSaving} onclick={() => void logout()} /></div>{/if}
   {#if group !== "posts"}
-   {#key group}<AdminSettings {group} {locale} {local} {remote} {api} bind:dirty={settingsDirty} bind:saving={settingsSaving} />{/key}
+   {#key group}<AdminSettings {group} {locale} {local} {remote} {dynamic} {api} bind:dirty={settingsDirty} bind:saving={settingsSaving} />{/key}
   {:else if form}
    <Button variant="text" label={t(I18nKey.adminBack)} onclick={back} />
    <form onsubmit={save} class="admin-editor">
@@ -394,7 +396,7 @@ onMount(() => {
    <div class="admin-heading"><div><p class="admin-eyebrow">{t(I18nKey.adminOverview)}</p><h1>{t(I18nKey.adminTitle)}</h1><p class="admin-subtitle">{t(I18nKey.adminSubtitle)}</p></div>
     <Button disabled={!local || loading || !!error} onclick={() => void open()}>{@render symbol("add")}{t(I18nKey.adminNewPost)}</Button>
    </div>
-   <p class="admin-mode">{@render symbol(local ? "edit" : "draft")}{t(remote ? I18nKey.adminServerHint : local ? I18nKey.adminLocalHint : I18nKey.adminOnlineHint)}</p>
+   <p class="admin-mode">{@render symbol(local ? "edit" : "draft")}{t(dynamic ? I18nKey.adminDynamicHint : remote ? I18nKey.adminServerHint : local ? I18nKey.adminLocalHint : I18nKey.adminOnlineHint)}</p>
    <section class="admin-stats" aria-label={t(I18nKey.adminOverview)}>
     {#each [[I18nKey.adminPosts, posts.length, "posts"], [I18nKey.adminPublished, posts.length - draftCount, "published"], [I18nKey.adminDrafts, draftCount, "draft"]] as item}
      <div class="admin-stat"><span class="admin-stat-icon">{@render symbol(String(item[2]))}</span><div><p>{t(item[0] as I18nKey)}</p><strong>{local ? item[1] : "—"}</strong></div></div>

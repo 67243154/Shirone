@@ -29,7 +29,7 @@ const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
 let cache: CalendarData | null = null;
 
 export async function getCalendarData(): Promise<CalendarData> {
-	if (cache) return cache;
+	if (cache && import.meta.env?.SHIRONE_DYNAMIC !== "1") return cache;
 
 	const posts = await getSortedPosts();
 	const postsByDate: Record<string, CalendarPost[]> = {};

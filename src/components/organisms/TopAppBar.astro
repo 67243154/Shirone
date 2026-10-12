@@ -183,7 +183,7 @@ function isActive(link: (typeof links)[number]): boolean {
 	loadTopAppBar();
 </script>
 
-{import.meta.env.PROD && <script is:inline define:vars={{scriptUrl: url('/pagefind/pagefind.js')}}>
+{import.meta.env.PROD && import.meta.env.SHIRONE_DYNAMIC !== "1" && <script is:inline define:vars={{scriptUrl: url('/pagefind/pagefind.js')}}>
 window.__loadPagefind = function() {
 	if (window.__pagefindLoadingPromise) return window.__pagefindLoadingPromise;
 	window.__pagefindLoadingPromise = (async () => {

@@ -32,6 +32,7 @@ export const adminDocuments: readonly AdminDocumentDefinition[] = [
 		"expressiveCode",
 		"imageBloom",
 		"footer",
+		"runtimeAppearance",
 	].map((id) => ({
 		id,
 		group: "appearance" as const,

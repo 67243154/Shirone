@@ -92,6 +92,7 @@ const mainContentClasses = generateMainContentClasses(sidebarResponsive);
                 <CategoryBar currentPostCategory={postCategory}></CategoryBar>
                 <main
                     id="swup-container"
+                    data-runtime-revision={Astro.locals.runtimeRevision}
                     data-current-post-category={postCategory || ""}
                     data-current-page={page}
                     data-has-comments={hasComments ? "true" : "false"}

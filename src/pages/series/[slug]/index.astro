@@ -35,7 +35,8 @@ export async function getStaticPaths() {
 const { slug } = Astro.params;
 const catalog = await getSeriesCatalog();
 const series = slug ? catalog.get(slug) : undefined;
-if (!series) {
+if (!series || !seriesConfig.enable) {
+	if (import.meta.env.SHIRONE_DYNAMIC) { Astro.response.status = 404; return Astro.rewrite("/404/"); }
 	return Astro.redirect("/404/");
 }
 

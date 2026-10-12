@@ -1,5 +1,6 @@
 import path from "node:path";
 import { getProjectImageLoader } from "./project-images";
+import { runtimeImageUrl } from "../runtime/image-url";
 
 const imageFiles = import.meta.glob<ImageMetadata>(
 	"../**/*.{png,jpg,jpeg,webp,avif,svg,gif}",
@@ -25,6 +26,7 @@ export async function resolveImageAsset(
 		src.startsWith("data:")
 	);
 	if (!isLocal) return src;
+	if (import.meta.env.SHIRONE_DYNAMIC === "1") return runtimeImageUrl(src, basePath);
 	const file = getLocalImageLoader(src, basePath);
 	return file ? file() : src;
 }

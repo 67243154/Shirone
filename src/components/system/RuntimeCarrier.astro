@@ -1,0 +1,17 @@
+---
+const state = Astro.locals.runtimeState;
+const json = JSON.stringify(state ?? null).replaceAll("<", "\\u003c");
+---
+{state && <script is:inline id="shirone-runtime-state" type="application/json" set:html={json} />}
+{state && <style is:inline>
+html { font-size: var(--runtime-body-mobile, 14px); }
+@media (min-width: 768px) { html { font-size: var(--runtime-body-size, 16px); } }
+</style>}
+{state && <script>
+const initialRevision = document.getElementById("swup-container")?.dataset.runtimeRevision;
+// A changed configuration/content revision needs the persistent shell refreshed too.
+document.addEventListener("swup:content:replace", () => {
+ const revision = document.getElementById("swup-container")?.dataset.runtimeRevision;
+ if (initialRevision && revision && revision !== initialRevision) window.location.reload();
+});
+</script>}

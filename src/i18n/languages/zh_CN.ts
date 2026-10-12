@@ -2,6 +2,20 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const zh_CN: Translation = {
+	[Key.adminDynamicFieldsHint]: "在下方编辑结构化设置，保存后下次访问直接生效。源代码和灰色部署字段需在项目中修改并构建。",
+	[Key.adminDynamicHint]: "动态管理 · 保存后下次访问直接生效，无需重建整站",
+	[Key.adminDynamicSaved]: "已保存，下次访问将读取最新内容。",
+	[Key.adminBackgroundTheme]: "跟随主题",
+	[Key.adminBackgroundSolid]: "自定义纯色",
+	[Key.adminUnsupportedMdx]: "MDX 新增组件导入需要重新构建部署；本次未保存，请沿用已部署的组件导入。",
+	[Key.adminDeploymentHint]: "此项属于部署设置，修改后需要重新构建或重启。动态设置不支持直接编辑 TypeScript 代码。",
+	[Key.adminDeploymentSaved]: "已保存部署设置，重新构建或重启后生效。",
+	[Key.adminDomainRuntimeAppearance]: "动态外观参数",
+	[Key.adminAttrBodyFontSize]: "正文基础字号（px）",
+	[Key.adminAttrTitleFontScale]: "标题字号倍率",
+	[Key.adminAttrCornerRadius]: "卡片圆角（px）",
+	[Key.adminAttrBackground]: "背景模式",
+	[Key.adminAttrBackgroundColor]: "自定义背景颜色（#RRGGBB）",
 	[Key.adminTitle]: "内容管理",
 	[Key.adminSubtitle]: "把灵感，写成故事。",
 	[Key.adminOverview]: "写作空间",

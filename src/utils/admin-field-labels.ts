@@ -3,6 +3,11 @@ import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 
 const names: Record<string, string> = {
+	bodyFontSize: "adminAttrBodyFontSize",
+	titleFontScale: "adminAttrTitleFontScale",
+	cornerRadius: "adminAttrCornerRadius",
+	background: "adminAttrBackground",
+	backgroundColor: "adminAttrBackgroundColor",
 	site: "adminAttrSite",
 	base: "adminAttrBase",
 	title: "adminAttrTitle",
@@ -387,6 +392,15 @@ export function adminOptionLabel(
 	path = "",
 ): string {
 	if (value === "auto") return i18n(I18nKey.adminOptionAuto, locale);
+	if (value.startsWith("$t:") && Object.hasOwn(I18nKey, value.slice(3)))
+		return i18n(I18nKey[value.slice(3) as keyof typeof I18nKey], locale);
+	if (path === "runtimeAppearanceConfig.background")
+		return i18n(
+			value === "solid"
+				? I18nKey.adminBackgroundSolid
+				: I18nKey.adminBackgroundTheme,
+			locale,
+		);
 	if (path === "commentConfig.giscus.mapping") {
 		const mappings: Record<string, I18nKey> = {
 			pathname: I18nKey.adminOptionPathname,
@@ -407,6 +421,7 @@ export function adminOptionLabel(
 
 /** Choices mirror the configuration unions; saves still use the authoritative TS types. */
 const choices: Record<string, readonly string[]> = {
+	"runtimeAppearanceConfig.background": ["theme", "solid"],
 	"siteConfig.lang": [
 		"zh_CN",
 		"zh_TW",

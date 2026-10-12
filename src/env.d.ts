@@ -1,6 +1,18 @@
 /// <reference types="astro/client" />
 /// <reference path="../.astro/types.d.ts" />
 
+declare module "virtual:shirone-runtime-paths" {
+	export const projectRoot: string;
+	export const contentDir: string;
+}
+
+declare namespace App {
+	interface Locals {
+		runtimeState?: import("./runtime/settings-shared").RuntimeState;
+		runtimeRevision?: string;
+	}
+}
+
 declare module "virtual:shirone-music-sidebar" {
 	const component:
 		| typeof import("@components/organisms/music/MusicSidebar.astro").default

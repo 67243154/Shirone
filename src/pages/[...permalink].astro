@@ -135,6 +135,7 @@ export async function getStaticPaths() {
 }
 
 const { entry, discovery, series } = Astro.props;
+if (!entry) { Astro.response.status = 404; return Astro.rewrite("/404/"); }
 const seriesCardAtTop = seriesConfig.cardPosition !== "bottom";
 const isEncrypted = Boolean(
 	entry.data.password && entry.data.password.trim().length > 0,

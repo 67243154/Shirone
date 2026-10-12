@@ -1,5 +1,3 @@
-import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
 import { aboutConfig } from "@/config/aboutConfig";
 import { albumsConfig } from "@/config/albumsConfig";
 import { animeConfig } from "@/config/animeConfig";
@@ -33,97 +31,97 @@ import { pruneUnavailableNavLinks } from "../utils/nav-utils.ts";
  */
 export const LinkPresets: Record<string, NavBarLink> = {
 	Home: {
-		name: i18n(I18nKey.home),
+		name: "$t:home",
 		url: "/",
 		icon: "material-symbols:home-outline-rounded",
 		pageKey: "home",
 	},
 	Archive: {
-		name: i18n(I18nKey.archive),
+		name: "$t:archive",
 		url: "/archive/",
 		icon: "material-symbols:archive-outline-rounded",
 		pageKey: "archive",
 	},
 	Friends: {
-		name: i18n(I18nKey.friends),
+		name: "$t:friends",
 		url: "/friends/",
 		icon: "material-symbols:handshake-outline-rounded",
 		pageKey: "friends",
 	},
 	Moments: {
-		name: i18n(I18nKey.moments),
+		name: "$t:moments",
 		url: "/moments/",
 		icon: "material-symbols:auto-awesome-outline-rounded",
 		pageKey: "moments",
 	},
 	Anime: {
-		name: i18n(I18nKey.anime),
+		name: "$t:anime",
 		url: "/anime/",
 		icon: "material-symbols:live-tv-outline-rounded",
 		pageKey: "anime",
 	},
 	Compass: {
-		name: i18n(I18nKey.compass),
+		name: "$t:compass",
 		url: "/compass/",
 		icon: "material-symbols:explore-rounded",
 		pageKey: "compass",
 	},
 	Skills: {
-		name: i18n(I18nKey.skills),
+		name: "$t:skills",
 		url: "/skills/",
 		icon: "material-symbols:workspaces-outline-rounded",
 		pageKey: "skills",
 	},
 	Projects: {
-		name: i18n(I18nKey.projects),
+		name: "$t:projects",
 		url: "/projects/",
 		icon: "material-symbols:deployed-code-outline-rounded",
 		pageKey: "projects",
 	},
 	Devices: {
-		name: i18n(I18nKey.devices),
+		name: "$t:devices",
 		url: "/devices/",
 		icon: "material-symbols:devices-rounded",
 		pageKey: "devices",
 	},
 	Games: {
-		name: i18n(I18nKey.games),
+		name: "$t:games",
 		url: "/games/",
 		icon: "material-symbols:sports-esports-outline-rounded",
 		pageKey: "games",
 	},
 	Timeline: {
-		name: i18n(I18nKey.timeline),
+		name: "$t:timeline",
 		url: "/timeline/",
 		icon: "material-symbols:timeline-rounded",
 		pageKey: "timeline",
 	},
 	Albums: {
-		name: i18n(I18nKey.albums),
+		name: "$t:albums",
 		url: "/albums/",
 		icon: "material-symbols:photo-library-outline-rounded",
 		pageKey: "albums",
 	},
 	Categories: {
-		name: i18n(I18nKey.categories),
+		name: "$t:categories",
 		url: "/categories/",
 		icon: "material-symbols:folder-outline-rounded",
 		pageKey: "categories",
 	},
 	Tags: {
-		name: i18n(I18nKey.tags),
+		name: "$t:tags",
 		url: "/tags/",
 		icon: "material-symbols:tag-rounded",
 		pageKey: "tags",
 	},
 	Series: {
-		name: i18n(I18nKey.series),
+		name: "$t:series",
 		url: "/series/",
 		icon: "material-symbols:auto-stories-outline-rounded",
 		pageKey: "series",
 	},
 	About: {
-		name: i18n(I18nKey.about),
+		name: "$t:about",
 		url: "/about/",
 		icon: "material-symbols:info-outline-rounded",
 		pageKey: "about",
@@ -147,7 +145,7 @@ const defaultNavBarConfig: NavBarConfig = {
 		LinkPresets.Compass,
 		LinkPresets.Albums,
 		{
-			name: i18n(I18nKey.more),
+			name: "$t:more",
 			icon: "material-symbols:apps-rounded",
 			children: [
 				LinkPresets.Timeline,
@@ -219,7 +217,11 @@ export function resolveNavBarLinks(
 		}
 
 		const name =
-			entry.name !== undefined ? resolveName(entry.name) : base?.name;
+			entry.name !== undefined
+				? resolveName(entry.name)
+				: base
+					? resolveName(base.name)
+					: undefined;
 		if (name === undefined) {
 			fail("每个条目都需要 name，或用 preset 引用一个内置预设。");
 		}

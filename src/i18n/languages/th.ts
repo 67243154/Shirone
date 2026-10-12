@@ -2,6 +2,20 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const th: Translation = {
+	[Key.adminDynamicFieldsHint]: "Edit structured settings below. Changes apply on the next visit. Source code and disabled deployment fields require a project rebuild.",
+	[Key.adminDynamicHint]: "Live editing · saved content applies on the next visit without rebuilding",
+	[Key.adminDynamicSaved]: "Saved. The next visit will read the latest content.",
+	[Key.adminBackgroundTheme]: "Follow theme",
+	[Key.adminBackgroundSolid]: "Custom solid color",
+	[Key.adminUnsupportedMdx]: "New MDX component imports require a deployment build. Changes were not saved; reuse deployed imports.",
+	[Key.adminDeploymentHint]: "Deployment setting: rebuild or restart after changes. Runtime settings do not accept TypeScript source edits.",
+	[Key.adminDeploymentSaved]: "Deployment setting saved. Rebuild or restart to apply.",
+	[Key.adminDomainRuntimeAppearance]: "Live appearance",
+	[Key.adminAttrBodyFontSize]: "Base body font size (px)",
+	[Key.adminAttrTitleFontScale]: "Title font scale",
+	[Key.adminAttrCornerRadius]: "Card corner radius (px)",
+	[Key.adminAttrBackground]: "Background mode",
+	[Key.adminAttrBackgroundColor]: "Custom background color (#RRGGBB)",
 	[Key.adminServerHint]:
 		"Server editing · saving rebuilds and publishes the site; please wait",
 	[Key.adminServerSaved]: "Saved and published to the website.",

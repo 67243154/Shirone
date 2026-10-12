@@ -72,7 +72,11 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 	try {
 		let searchResults: SearchResult[] = [];
 
-		if (import.meta.env.PROD) {
+		if (import.meta.env.SHIRONE_DYNAMIC === "1") {
+			const response = await fetch(`${url("/__content/search/")}?q=${encodeURIComponent(keyword)}`);
+			if (!response.ok) throw new Error("Search unavailable");
+			searchResults = (await response.json()).results;
+		} else if (import.meta.env.PROD) {
 			if (
 				!window.pagefind &&
 				typeof (

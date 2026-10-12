@@ -2,6 +2,8 @@
 import { Font } from "astro:assets";
 import Snackbar from "@components/atoms/overlay/Snackbar.svelte";
 import ConfigCarrier from "@components/system/ConfigCarrier.astro";
+import RuntimeCarrier from "@components/system/RuntimeCarrier.astro";
+import { runtimeAppearanceConfig } from "../config/runtimeAppearanceConfig";
 import UmamiRuntime from "@components/system/UmamiRuntime.astro";
 import { resolveAsset } from "@utils/asset-utils";
 import { pathsEqual, toAbsoluteUrl, url } from "@utils/url-utils";
@@ -107,6 +109,17 @@ if (!lang) {
 const siteLang = lang.replace("_", "-");
 const fontRoleStyle = createFontRoleStyle(resolvedFontOptions);
 const customFontsEnabled = resolvedFontOptions.mode === "custom";
+const runtimeStyle = import.meta.env.SHIRONE_DYNAMIC === "1" ? [
+ `--runtime-body-size:${runtimeAppearanceConfig.bodyFontSize}px`,
+ `--runtime-body-mobile:${runtimeAppearanceConfig.bodyFontSize * 0.875}px`,
+ `--shape-corner-l:${runtimeAppearanceConfig.cornerRadius}px`,
+ `--shape-corner-xl:${runtimeAppearanceConfig.cornerRadius + 12}px`,
+ `--m3e-type-headline-large:400 ${2 * runtimeAppearanceConfig.titleFontScale}rem/1.25 var(--font-sans)`,
+ `--m3e-type-headline-medium:400 ${1.75 * runtimeAppearanceConfig.titleFontScale}rem/2.25rem var(--font-sans)`,
+ `--m3e-type-headline-small:400 ${1.5 * runtimeAppearanceConfig.titleFontScale}rem/2rem var(--font-sans)`,
+ `--m3e-type-title-large:400 ${1.375 * runtimeAppearanceConfig.titleFontScale}rem/1.75rem var(--font-sans)`,
+ ...(runtimeAppearanceConfig.background === "solid" ? [`--page-bg:${runtimeAppearanceConfig.backgroundColor}`] : []),
+].join(";") : undefined;
 const hasBodyFont =
 	customFontsEnabled && Boolean(resolvedFontOptions.roles.body.family);
 const hasCjkFont =
@@ -116,8 +129,9 @@ const hasMonoFont =
 ---
 
 <!DOCTYPE html>
-<html lang={siteLang} class="bg-[var(--page-bg)] transition text-[14px] md:text-[16px]">
+<html lang={siteLang} style={runtimeStyle} class="bg-[var(--page-bg)] transition text-[14px] md:text-[16px]">
 	<head>
+		{import.meta.env.SHIRONE_DYNAMIC === "1" && <RuntimeCarrier />}
 		<style is:inline>@layer properties, theme, base, components, utilities;</style>
 
 		<title>{pageTitle}</title>

@@ -20,6 +20,7 @@ let {
 	locale,
 	local,
 	remote = false,
+	dynamic = false,
 	api,
 	dirty = $bindable(false),
 	saving = $bindable(false),
@@ -28,6 +29,7 @@ let {
 	locale: string;
 	local: boolean;
 	remote?: boolean;
+	dynamic?: boolean;
 	api: <T>(path: string, data?: unknown) => Promise<T>;
 	dirty?: boolean;
 	saving?: boolean;
@@ -70,7 +72,7 @@ $effect(() => {
 });
 function error(code: string) {
 	issue = t(
-		code === "publish"
+		code === "deploymentRequired" ? I18nKey.adminDeploymentHint : code === "publish"
 			? I18nKey.adminPublishFailed
 			: code === "conflict"
 				? I18nKey.adminConflict
@@ -146,7 +148,7 @@ async function save(event: SubmitEvent) {
 		if (!active) return;
 		document = result;
 		initial = snapshot();
-		message = t(remote ? I18nKey.adminServerSaved : I18nKey.adminConfigSaved);
+		message = t(dynamic ? result.mode === "deployment" ? I18nKey.adminDeploymentSaved : I18nKey.adminDynamicSaved : remote ? I18nKey.adminServerSaved : I18nKey.adminConfigSaved);
 	} catch (e) {
 		if (active) {
 			error((e as Error).message);
@@ -170,31 +172,31 @@ onMount(() => {
  <Button variant="text" label={t(I18nKey.adminBackSections)} onclick={back} disabled={saving} />
  <form class="admin-editor" onsubmit={save}>
   <div class="admin-heading"><div><p class="admin-eyebrow">{t(titleKey)}</p><h1>{t(adminDocuments.find(item => item.id === document?.id)?.title as I18nKey)}</h1><p class="admin-helper">{document.file}</p></div><Button type="submit" disabled={!local || saving || document.readonly || loading} label={t(saving ? I18nKey.adminSaving : I18nKey.adminSaveConfig)} /></div>
-  <p class="admin-mode">{t(document.readonly ? I18nKey.adminConfigReadonly : I18nKey.adminConfigHint)}</p>
+  <p class="admin-mode">{t(document.readonly ? I18nKey.adminConfigReadonly : dynamic ? document.mode === "deployment" ? I18nKey.adminDeploymentHint : I18nKey.adminDynamicHint : I18nKey.adminConfigHint)}</p>
   <section class="admin-panel">
    <div class="admin-source-tabs">
     <button type="button" class="m3-state-layer" aria-pressed={!sourceMode} disabled={!document.fields.length || saving} onclick={() => mode(false)}>{t(I18nKey.adminFormMode)}</button>
-    <button type="button" class="m3-state-layer" aria-pressed={sourceMode} disabled={saving} onclick={() => mode(true)}>{t(I18nKey.adminAdvancedSource)}</button>
+    <button type="button" class="m3-state-layer" aria-pressed={sourceMode} disabled={saving || (dynamic && document.mode === "runtime" && document.file.endsWith(".ts"))} onclick={() => mode(true)}>{t(I18nKey.adminAdvancedSource)}</button>
    </div>
    {#if sourceMode}
     <label class="admin-config-field"><span>{t(I18nKey.adminAdvancedSource)}</span><textarea class="admin-body admin-config-source" rows="24" spellcheck="false" bind:value={document.source} disabled={document.readonly || saving}></textarea></label>
    {:else}
-    <p class="admin-helper admin-config-intro">{t(I18nKey.adminFieldsHint)}</p>
+    <p class="admin-helper admin-config-intro">{t(dynamic && document.mode === "runtime" ? I18nKey.adminDynamicFieldsHint : I18nKey.adminFieldsHint)}</p>
     <div class="admin-config-fields">
      {#each document.fields as field (field.id)}
       <div class:admin-field-wide={field.kind === "json"} class="admin-config-field">
        {#if field.kind === "boolean"}
-        <div class="admin-toggle"><span>{adminFieldLabel(field.path, locale)}</span><Switch bind:checked={field.value as boolean} label={adminFieldLabel(field.path, locale)} disabled={saving || document.readonly} /></div>
+        <div class="admin-toggle"><span>{adminFieldLabel(field.path, locale)}</span><Switch bind:checked={field.value as boolean} label={adminFieldLabel(field.path, locale)} disabled={saving || document.readonly || field.readonly} /></div>
         <span class="admin-value-label">{t(field.value ? I18nKey.adminEnabled : I18nKey.adminDisabled)}</span>
        {:else if field.kind === "json"}
-        <h2 class="admin-field-title">{adminFieldLabel(field.path, locale)}</h2><AdminArrayEditor bind:value={field.value as string} {locale} label={field.path} disabled={saving || document.readonly} />
+        <h2 class="admin-field-title">{adminFieldLabel(field.path, locale)}</h2><AdminArrayEditor bind:value={field.value as string} {locale} label={field.path} disabled={saving || document.readonly || field.readonly} />
        {:else}
         <label for={`config-field-${field.id}`}>{adminFieldLabel(field.path, locale)}</label>
-        {#if field.kind === "number"}<input id={`config-field-${field.id}`} type="number" step="any" bind:value={field.value as number} disabled={saving || document.readonly} />
+        {#if field.kind === "number"}<input id={`config-field-${field.id}`} type="number" step="any" bind:value={field.value as number} disabled={saving || document.readonly || field.readonly} />
         {:else if adminFieldChoices(field.path, String(field.value)).length}
-         <select id={`config-field-${field.id}`} bind:value={field.value as string} disabled={saving || document.readonly}>{#each adminFieldChoices(field.path, String(field.value)) as option}<option value={option}>{adminOptionLabel(option, locale, field.path)}</option>{/each}</select>
+         <select id={`config-field-${field.id}`} bind:value={field.value as string} disabled={saving || document.readonly || field.readonly}>{#each adminFieldChoices(field.path, String(field.value)) as option}<option value={option}>{adminOptionLabel(option, locale, field.path)}</option>{/each}</select>
          <p class="admin-helper">{t(I18nKey.adminCurrentValue)}：{adminOptionLabel(String(field.value), locale, field.path)} <code>({field.value})</code></p>
-        {:else}<textarea id={`config-field-${field.id}`} rows={String(field.value).includes("\n") ? 4 : 1} bind:value={field.value as string} disabled={saving || document.readonly}></textarea>{#if adminOptionLabel(String(field.value), locale, field.path) !== String(field.value)}<p class="admin-helper">{t(I18nKey.adminCurrentValue)}：{adminOptionLabel(String(field.value), locale, field.path)}</p>{/if}{/if}
+        {:else}<textarea id={`config-field-${field.id}`} rows={String(field.value).includes("\n") ? 4 : 1} bind:value={field.value as string} disabled={saving || document.readonly || field.readonly}></textarea>{#if adminOptionLabel(String(field.value), locale, field.path) !== String(field.value)}<p class="admin-helper">{t(I18nKey.adminCurrentValue)}：{adminOptionLabel(String(field.value), locale, field.path)}</p>{/if}{/if}
        {/if}
        {#if field.kind === "string"}{#each adminImageValues(field.value, field.path) as image}<AdminImagePreview value={image} {locale} />{/each}{/if}
        <p class="admin-helper admin-technical">{t(I18nKey.adminTechnicalKey)}：<code>{field.path}</code></p>

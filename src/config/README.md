@@ -2,6 +2,10 @@
 
 本目录是 Shirone 全部用户可选配置的唯一入口。约定如下：
 
+启用本地动态模式后，后台日常配置保存在 `.shirones/runtime/settings.json`，这些 TypeScript 文件作为默认配置和校验契约保留。`runtimeAppearanceConfig.ts` 定义既有样式的可调参数。字体、构建插件、依赖、高级源码、站点域名/base 仍属于部署设置；详见 [动态运行说明](../../docs/dynamic-runtime.md)。
+
+导航预设名称采用 `$t:home` 等翻译引用，`resolveNavBarLinks` 在组装时解析为当前语言；后台可直接改为自定义文字并动态生效。
+
 ## 文件组织
 
 | 内容 | 位置 | 示例 |

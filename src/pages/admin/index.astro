@@ -6,5 +6,5 @@ import { adminConfig } from "@/config/adminConfig";
 if (!adminConfig.enable) return Astro.redirect("/404/");
 ---
 <AdminLayout>
- <AdminWorkspace client:load local={import.meta.env.DEV || import.meta.env.SHIRONE_REMOTE_ADMIN === "1"} remote={!import.meta.env.DEV && import.meta.env.SHIRONE_REMOTE_ADMIN === "1"} />
+ <AdminWorkspace client:load local={import.meta.env.DEV || import.meta.env.SHIRONE_REMOTE_ADMIN === "1" || import.meta.env.SHIRONE_DYNAMIC === "1"} remote={!import.meta.env.DEV && import.meta.env.SHIRONE_REMOTE_ADMIN === "1"} dynamic={import.meta.env.SHIRONE_DYNAMIC === "1"} />
 </AdminLayout>

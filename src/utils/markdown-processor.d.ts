@@ -1,4 +1,6 @@
 /** markdown-processor.mjs 的类型面（实现文件为 .mjs，astro.config 与 content-utils 共用） */
+export declare const siteRemarkPlugins: import("@astrojs/markdown-remark").RemarkPlugins;
+export declare const siteRehypePlugins: import("@astrojs/markdown-remark").RehypePlugins;
 
 export interface SiteMarkdownRenderResult {
 	code: string;

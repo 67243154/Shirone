@@ -36,7 +36,7 @@ const optimizedOptions = options
 					const configuredCover = configuredCovers.get(track.id) ?? track.cover;
 					if (!configuredCover) return track;
 					const asset = await resolveImageAsset(configuredCover);
-					if (typeof asset === "string") return track;
+					if (typeof asset === "string") return { ...track, cover: asset };
 					const widths = [64, 128].filter((width) => width <= asset.width);
 					if (!widths.length) widths.push(asset.width);
 					const candidates = await Promise.all(

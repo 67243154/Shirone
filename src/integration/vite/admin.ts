@@ -76,7 +76,7 @@ function shape(file: string, source: string, includeBody = false): AdminPost {
 }
 
 /** File store is independent of Vite so safety and preservation can be tested. */
-export function createAdminStore(contentDir: string): {
+export function createAdminStore(contentDir: string, backupDir?: string, validateBody?: (file: string, body: string, previous: string) => Promise<void>): {
 	list(): Promise<AdminPost[]>;
 	read(file: string): Promise<AdminPost>;
 	save(input: AdminSave): Promise<AdminPost>;
@@ -169,6 +169,12 @@ export function createAdminStore(contentDir: string): {
 			if (!input.create && input.version !== fingerprint(original))
 				throw new AdminError("conflict", 409);
 			const { document } = split(original);
+			await validateBody?.(input.file, input.body, split(original).body);
+			if (backupDir && !input.create) {
+				const backup = resolve(backupDir, input.file);
+				await mkdir(resolve(backup, ".."), { recursive: true, mode: 0o700 });
+				await writeFile(backup, original, { flag: "wx", mode: 0o600 }).catch(error => { if (error.code !== "EEXIST") throw error; });
+			}
 			for (const key of [
 				"title",
 				"published",
@@ -243,6 +249,9 @@ export interface AdminMiddlewareOptions {
 	origin?: string;
 	authFile?: string;
 	afterSave?: () => Promise<void>;
+	documents?: ReturnType<typeof createAdminDocumentStore>;
+	backupDir?: string;
+	validateBody?: (file: string, body: string, previous: string) => Promise<void>;
 }
 export function createAdminMiddleware(
 	contentDir: string,
@@ -260,8 +269,8 @@ export function createAdminMiddleware(
 			throw new Error("An exact HTTPS admin origin is required");
 	}
 	const token = randomBytes(32).toString("hex");
-	const store = createAdminStore(contentDir);
-	const documents = createAdminDocumentStore(documentPaths);
+	const store = createAdminStore(contentDir, options.backupDir, options.validateBody);
+	const documents = options.documents ?? createAdminDocumentStore(documentPaths);
 	const authFile =
 		options.authFile ??
 		join(
@@ -471,9 +480,12 @@ export function shironesAdmin(
 				},
 			};
 		},
-		configureServer(server) {
+		async configureServer(server) {
+			const dynamic = process.env.SHIRONE_DYNAMIC === "1";
+			const documents = dynamic ? (await import("../../runtime/settings-store.ts")).createRuntimeDocumentStore(documentPaths) : undefined;
+			const validateBody = dynamic ? (await import("../../runtime/post-validation.ts")).createRuntimePostValidator(projectRoot) : undefined;
 			server.middlewares.use(
-				createAdminMiddleware(contentDir, projectRoot, documentPaths),
+				createAdminMiddleware(contentDir, projectRoot, documentPaths, { documents, validateBody, ...(dynamic ? { backupDir: join(projectRoot, ".shirones/runtime/backups/posts") } : {}) }),
 			);
 		},
 	};

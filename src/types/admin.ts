@@ -33,6 +33,7 @@ export interface AdminField {
 	comment: string;
 	kind: "string" | "number" | "boolean" | "json";
 	value: string | number | boolean;
+	readonly?: boolean;
 }
 
 export interface AdminDocument {
@@ -42,4 +43,5 @@ export interface AdminDocument {
 	source: string;
 	fields: AdminField[];
 	readonly: boolean;
+	mode?: "runtime" | "deployment";
 }

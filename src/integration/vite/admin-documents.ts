@@ -64,7 +64,7 @@ function literal(node: ts.Expression): unknown {
 	return undefined;
 }
 
-function regions(source: string, file: string): Region[] {
+export function regions(source: string, file: string): Region[] {
 	if (!file.endsWith(".ts")) return [];
 	const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
 	const result: Region[] = [];
@@ -152,8 +152,14 @@ export interface AdminDocumentPaths {
 	isThemeRepo: boolean;
 }
 
+export interface AdminDocumentHooks {
+	readSource?: (id: string, source: string) => Promise<string>;
+	writeSource?: (id: string, baseline: string, source: string) => Promise<boolean>;
+	decorate?: (document: AdminDocument) => AdminDocument;
+}
+
 /** Config and data source edits preserve comments/imports and use the existing TS contracts. */
-export function createAdminDocumentStore(paths: AdminDocumentPaths): {
+export function createAdminDocumentStore(paths: AdminDocumentPaths, hooks: AdminDocumentHooks = {}): {
 	list(): Promise<string[]>;
 	read(id: string): Promise<AdminDocument>;
 	save(input: {
@@ -164,6 +170,8 @@ export function createAdminDocumentStore(paths: AdminDocumentPaths): {
 	}): Promise<AdminDocument>;
 } {
 	let pending: Promise<unknown> = Promise.resolve();
+	let previousProgram: ts.Program | undefined;
+	const parsedSources = new Map<string, { text: string; tree: ts.SourceFile }>();
 	async function target(id: string): Promise<string> {
 		const entry = adminDocuments.find((item) => item.id === id);
 		if (!entry) throw new AdminDocumentError("path");
@@ -191,7 +199,7 @@ export function createAdminDocumentStore(paths: AdminDocumentPaths): {
 	function shape(id: string, source: string): AdminDocument {
 		const entry = adminDocuments.find((item) => item.id === id);
 		if (!entry) throw new AdminDocumentError("notFound", 404);
-		return {
+		const document: AdminDocument = {
 			id,
 			file: entry.file,
 			source,
@@ -201,6 +209,7 @@ export function createAdminDocumentStore(paths: AdminDocumentPaths): {
 			),
 			readonly: id === "integrations" && !paths.isThemeRepo,
 		};
+		return hooks.decorate?.(document) ?? document;
 	}
 	function validate(path: string, source: string): void {
 		if (!path.endsWith(".ts")) return;
@@ -230,6 +239,17 @@ export function createAdminDocumentStore(paths: AdminDocumentPaths): {
 		const read = host.readFile;
 		host.readFile = (file) =>
 			resolve(file).toLowerCase() === path.toLowerCase() ? source : read(file);
+		// Keep unchanged contracts/library ASTs between saves; every edited source
+		// still receives full semantic validation rather than skipping enum/type checks.
+		host.getSourceFile = (file, languageVersion) => {
+			const text = host.readFile(file);
+			if (text === undefined) return undefined;
+			const cached = parsedSources.get(file);
+			if (cached?.text === text) return cached.tree;
+			const tree = ts.createSourceFile(file, text, languageVersion, true);
+			parsedSources.set(file, { text, tree });
+			return tree;
+		};
 		const ambient = ["node", "astro/client"].flatMap((name) => {
 			const reference = ts.resolveTypeReferenceDirective(
 				name,
@@ -239,7 +259,8 @@ export function createAdminDocumentStore(paths: AdminDocumentPaths): {
 			).resolvedTypeReferenceDirective;
 			return reference?.resolvedFileName ? [reference.resolvedFileName] : [];
 		});
-		const program = ts.createProgram([path, ...ambient], options, host);
+		const program = ts.createProgram([path, ...ambient], options, host, previousProgram);
+		previousProgram = program;
 		const tree = program.getSourceFile(path);
 		if (!tree) throw new AdminDocumentError("validation");
 		const issues = [
@@ -274,14 +295,17 @@ export function createAdminDocumentStore(paths: AdminDocumentPaths): {
 		},
 		async read(id) {
 			const path = await target(id);
-			return shape(id, await readFile(path, "utf8"));
+			const source = await readFile(path, "utf8");
+			return shape(id, hooks.readSource ? await hooks.readSource(id, source) : source);
 		},
 		async save(input) {
 			const task = async (): Promise<AdminDocument> => {
 				const path = await target(input.id);
 				if (input.id === "integrations" && !paths.isThemeRepo)
 					throw new AdminDocumentError("readonly", 403);
-				const original = await readFile(path, "utf8");
+				const baseline = await readFile(path, "utf8");
+				const original = hooks.readSource ? await hooks.readSource(input.id, baseline) : baseline;
+				if (hooks.readSource && hooks.decorate?.(shape(input.id, original)).mode === "runtime" && typeof input.source === "string" && path.endsWith(".ts")) throw new AdminDocumentError("deploymentRequired", 400);
 				if (
 					typeof input.version !== "string" ||
 					hash(original) !== input.version
@@ -332,6 +356,7 @@ export function createAdminDocumentStore(paths: AdminDocumentPaths): {
 					throw new AdminDocumentError("size", 413);
 				if (source === original) return shape(input.id, source);
 				validate(path, source);
+				if (await hooks.writeSource?.(input.id, baseline, source)) return shape(input.id, source);
 				const temp = `${path}.${randomBytes(6).toString("hex")}.admin-tmp`;
 				try {
 					await writeFile(temp, source, { encoding: "utf8", flag: "wx" });

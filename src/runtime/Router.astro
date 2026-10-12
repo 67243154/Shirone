@@ -1,0 +1,50 @@
+---
+import type { Page } from "astro";
+import { postListConfig } from "../config/postListConfig";
+import Home from "../pages/[...page].astro";
+import Permalink, { getStaticPaths } from "../pages/[...permalink].astro";
+import { getSortedPosts } from "../utils/content-utils";
+
+const path = Astro.params.path ?? "";
+let props:
+	| Awaited<ReturnType<typeof getStaticPaths>>[number]["props"]
+	| undefined;
+let page: Page<Awaited<ReturnType<typeof getSortedPosts>>[number]> | undefined;
+if (!path || /^\d+$/.test(path)) {
+	const posts = await getSortedPosts();
+	const size = postListConfig.pageSize;
+	const currentPage = path ? Number(path) : 1;
+	const lastPage = Math.max(1, Math.ceil(posts.length / size));
+	if (currentPage < 1 || currentPage > lastPage) {
+		Astro.response.status = 404;
+		return Astro.rewrite("/404/");
+	}
+	const start = (currentPage - 1) * size;
+	const link = (number: number) => (number === 1 ? "/" : `/${number}/`);
+	page = {
+		data: posts.slice(start, start + size),
+		start,
+		end: Math.min(start + size, posts.length) - 1,
+		size,
+		total: posts.length,
+		currentPage,
+		lastPage,
+		url: {
+			current: link(currentPage),
+			first: currentPage > 1 ? "/" : undefined,
+			last: currentPage < lastPage ? link(lastPage) : undefined,
+			prev: currentPage > 1 ? link(currentPage - 1) : undefined,
+			next: currentPage < lastPage ? link(currentPage + 1) : undefined,
+		},
+	};
+} else {
+	const routes = await getStaticPaths();
+	props = routes.find((route) => route.params.permalink === path)?.props;
+	if (!props) {
+		Astro.response.status = 404;
+		return Astro.rewrite("/404/");
+	}
+}
+---
+{page && <Home page={page} />}
+{props && <Permalink {...props} />}
