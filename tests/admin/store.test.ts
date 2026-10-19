@@ -49,6 +49,8 @@ test("preserves unedited frontmatter/MDX, rejects stale writes and invalid paths
 			body: "# New",
 			create: true,
 			draft: true,
+			// Creating a different post cannot inherit a write-only password.
+			encrypted: false,
 		};
 		await store.save(input);
 		await assert.rejects(store.save(input), /exists/);

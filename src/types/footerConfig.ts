@@ -8,4 +8,13 @@ export interface FooterConfig {
 	 * 关闭时（false）满足零额外负担，不进行文件读取与额外 DOM 渲染。
 	 */
 	enable: boolean;
+	/** Copyright owner; undefined uses profile name, empty shows a placeholder. */
+	copyrightName?: string;
+	/** Optional registration row, separate from custom HTML injection. */
+	registration?: {
+		enable: boolean;
+		icpNumber: string;
+		policeNumber: string;
+		image: string;
+	};
 }

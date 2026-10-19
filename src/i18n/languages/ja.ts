@@ -2,6 +2,41 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const ja: Translation = {
+	[Key.adminAllCategories]: "すべてのカテゴリ",
+	[Key.adminCategoryFilter]: "カテゴリで絞り込む",
+	[Key.adminSelectAll]: "絞り込み結果をすべて選択",
+	[Key.adminSelectPost]: "記事を選択",
+	[Key.adminSelectedCount]: "{count} 件選択中",
+	[Key.adminBatchDraft]: "下書きにする",
+	[Key.adminBatchPublish]: "選択した記事を公開",
+	[Key.adminBatchDelete]: "選択した記事を削除",
+	[Key.adminBatchLimit]: "一度に最大 200 件まで選択できます",
+	[Key.adminDelete]: "削除",
+	[Key.adminDeleteConfirmTitle]: "記事の削除を確認",
+	[Key.adminDeleteConfirm]:
+		"{count} 件を削除しますか？元ファイルをバックアップし、公開ページから削除します。",
+	[Key.adminDeleted]: "{count} 件を削除し、元ファイルをバックアップしました。",
+	[Key.adminBatchSaved]: "{count} 件を更新しました。",
+
+	[Key.footerCopyrightPlaceholder]: "著作権者名：未入力",
+	[Key.footerIcpPlaceholder]: "ICP 登録番号：未入力",
+	[Key.footerPolicePlaceholder]: "公安登録番号：未入力",
+	[Key.footerBadgePlaceholder]: "公安登録マークのプレースホルダー",
+
+	[Key.adminEncryptPasswordSaved]:
+		"パスワードは保存済みです。ここで確認・変更できます。空欄で保存すると現在のパスワードを保持します。",
+	[Key.protectedSecureConnectionRequired]:
+		"この接続では安全な復号ができません。HTTPSでこのページを開いてください。",
+	[Key.adminEncryptPost]: "記事を暗号化",
+	[Key.adminEncryptPassword]: "記事のパスワード",
+	[Key.adminEncryptPasswordHint]: "パスワードのヒント（任意）",
+	[Key.adminEncryptPasswordKeep]: "設定済み。空欄で現在のパスワードを保持",
+	[Key.adminEncryptHelp]:
+		"新しいパスワードは6～20文字です。暗号化を無効にすると記事が公開されます。",
+	[Key.adminEncryptPasswordRequired]:
+		"暗号化を有効にする前にパスワードを設定してください。",
+	[Key.adminEncryptPasswordInvalid]:
+		"新しいパスワードは6～20文字で、空白だけにはできません。",
 	[Key.adminUploadImage]: "画像をアップロード",
 	[Key.adminUploadingImage]: "アップロード中…",
 	[Key.adminUploadHint]:

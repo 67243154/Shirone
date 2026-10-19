@@ -2,6 +2,41 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const ko: Translation = {
+	[Key.adminAllCategories]: "모든 분류",
+	[Key.adminCategoryFilter]: "분류별 필터",
+	[Key.adminSelectAll]: "필터 결과 모두 선택",
+	[Key.adminSelectPost]: "글 선택",
+	[Key.adminSelectedCount]: "{count}개 선택됨",
+	[Key.adminBatchDraft]: "초안으로 이동",
+	[Key.adminBatchPublish]: "선택한 글 공개",
+	[Key.adminBatchDelete]: "선택한 글 삭제",
+	[Key.adminBatchLimit]: "한 번에 최대 200개 선택",
+	[Key.adminDelete]: "삭제",
+	[Key.adminDeleteConfirmTitle]: "삭제 확인",
+	[Key.adminDeleteConfirm]:
+		"{count}개를 삭제할까요? 원본을 백업하고 공개 페이지에서 제거합니다.",
+	[Key.adminDeleted]: "{count}개를 삭제하고 원본을 백업했습니다.",
+	[Key.adminBatchSaved]: "{count}개를 수정했습니다.",
+
+	[Key.footerCopyrightPlaceholder]: "저작권자 이름 입력 예정",
+	[Key.footerIcpPlaceholder]: "ICP 등록 번호: 입력 예정",
+	[Key.footerPolicePlaceholder]: "공안 등록 번호: 입력 예정",
+	[Key.footerBadgePlaceholder]: "등록 배지 자리 표시자",
+
+	[Key.adminEncryptPasswordSaved]:
+		"비밀번호가 저장되었습니다. 여기서 확인하거나 변경하세요. 비운 채 저장하면 기존 비밀번호를 유지합니다.",
+	[Key.protectedSecureConnectionRequired]:
+		"현재 연결에서는 안전하게 복호화할 수 없습니다. HTTPS로 이 페이지를 여세요.",
+	[Key.adminEncryptPost]: "글 암호화",
+	[Key.adminEncryptPassword]: "글 비밀번호",
+	[Key.adminEncryptPasswordHint]: "비밀번호 힌트 (선택)",
+	[Key.adminEncryptPasswordKeep]: "설정됨. 비워 두면 기존 비밀번호 유지",
+	[Key.adminEncryptHelp]:
+		"새 비밀번호는 6~20자여야 합니다. 암호화를 끄면 글이 공개됩니다.",
+	[Key.adminEncryptPasswordRequired]:
+		"암호화를 켜기 전에 글 비밀번호를 설정하세요.",
+	[Key.adminEncryptPasswordInvalid]:
+		"새 비밀번호는 6~20자이며 공백만 입력할 수 없습니다.",
 	[Key.adminUploadImage]: "이미지 업로드",
 	[Key.adminUploadingImage]: "업로드 중…",
 	[Key.adminUploadHint]:

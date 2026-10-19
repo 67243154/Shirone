@@ -2,6 +2,42 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const es: Translation = {
+	[Key.adminAllCategories]: "Todas las categorías",
+	[Key.adminCategoryFilter]: "Filtrar por categoría",
+	[Key.adminSelectAll]: "Seleccionar artículos filtrados",
+	[Key.adminSelectPost]: "Seleccionar artículo",
+	[Key.adminSelectedCount]: "{count} seleccionados",
+	[Key.adminBatchDraft]: "Mover a borradores",
+	[Key.adminBatchPublish]: "Publicar seleccionados",
+	[Key.adminBatchDelete]: "Eliminar seleccionados",
+	[Key.adminBatchLimit]: "Hasta 200 artículos por lote",
+	[Key.adminDelete]: "Eliminar",
+	[Key.adminDeleteConfirmTitle]: "Confirmar eliminación",
+	[Key.adminDeleteConfirm]:
+		"¿Eliminar {count} artículos? Se respaldarán los originales y dejarán de mostrarse públicamente.",
+	[Key.adminDeleted]:
+		"Se eliminaron {count} artículos; originales respaldados.",
+	[Key.adminBatchSaved]: "Se actualizaron {count} artículos.",
+
+	[Key.footerCopyrightPlaceholder]: "Nombre del titular pendiente",
+	[Key.footerIcpPlaceholder]: "Registro ICP: pendiente",
+	[Key.footerPolicePlaceholder]: "Registro de seguridad pública: pendiente",
+	[Key.footerBadgePlaceholder]: "Marcador del emblema de registro",
+
+	[Key.adminEncryptPasswordSaved]:
+		"Contraseña guardada. Puedes verla o editarla aquí; guardar el campo vacío conserva la actual.",
+	[Key.protectedSecureConnectionRequired]:
+		"Esta conexión no permite un descifrado seguro. Abre esta página mediante HTTPS.",
+	[Key.adminEncryptPost]: "Cifrar artículo",
+	[Key.adminEncryptPassword]: "Contraseña del artículo",
+	[Key.adminEncryptPasswordHint]: "Pista de contraseña (opcional)",
+	[Key.adminEncryptPasswordKeep]: "Ya establecida; deja vacío para conservarla",
+	[Key.adminEncryptHelp]:
+		"La nueva contraseña debe tener entre 6 y 20 caracteres. Desactivar el cifrado hace público el artículo.",
+	[Key.adminEncryptPasswordRequired]:
+		"Establece una contraseña antes de activar el cifrado.",
+	[Key.adminEncryptPasswordInvalid]:
+		"La nueva contraseña debe tener entre 6 y 20 caracteres y no puede contener solo espacios.",
 	[Key.adminUploadImage]: "Subir imagen",
 	[Key.adminUploadingImage]: "Subiendo…",
 	[Key.adminUploadHint]:

@@ -2,13 +2,16 @@
 import Button from "@components/atoms/action/Button.svelte";
 import TextField from "@components/atoms/input/TextField.svelte";
 import Switch from "@components/atoms/selection/Switch.svelte";
+import Checkbox from "@components/atoms/selection/Checkbox.svelte";
+import Select from "@components/atoms/input/Select.svelte";
+import Dialog from "@components/atoms/overlay/Dialog.svelte";
 import AdminImageField from "@components/molecules/AdminImageField.svelte";
 import AdminSettings from "@components/organisms/AdminSettings.svelte";
 import { url } from "@utils/url-utils";
 import { onMount, tick } from "svelte";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
-import type { AdminPost, AdminSave } from "@/types/admin";
+import type { AdminPost, AdminPostBatch, AdminSave } from "@/types/admin";
 import { adminStyles } from "./admin.styles";
 
 let {
@@ -21,6 +24,25 @@ const t = (key: I18nKey): string => i18n(key, locale);
 let posts = $state<AdminPost[]>([]);
 let query = $state("");
 let filter = $state("all");
+let category = $state("all");
+let selected = $state<string[]>([]);
+let deleteOpen = $state(false);
+let deleteTargets = $state<AdminPost[]>([]);
+const categoryItems = $derived([
+	{ value: "all", label: t(I18nKey.adminAllCategories) },
+	{ value: "uncategorized", label: t(I18nKey.uncategorized) },
+	...Array.from(new Set(posts.map((post) => post.category).filter(Boolean)))
+		.sort((a, b) => a.localeCompare(b))
+		.map((value) => ({ value: `category:${value}`, label: value })),
+]);
+$effect(() => {
+	query;
+	filter;
+	category;
+	group;
+	selected = [];
+	deleteOpen = false;
+});
 let group = $state("posts");
 let settingsDirty = $state(false);
 let settingsSaving = $state(false);
@@ -31,6 +53,7 @@ let message = $state("");
 let error = $state<I18nKey | null>(null);
 let form = $state<AdminSave | null>(null);
 let original = $state("");
+let originalPassword = $state("");
 let tagInput = $state("");
 let preview = $state(false);
 let previewHtml = $state("");
@@ -62,14 +85,66 @@ const visible = $derived(
 	posts.filter(
 		(post) =>
 			(filter === "all" || (filter === "draft" ? post.draft : !post.draft)) &&
+			(category === "all" ||
+				(category === "uncategorized"
+					? !post.category
+					: `category:${post.category}` === category)) &&
 			`${post.title} ${post.category} ${post.tags.join(" ")}`
 				.toLowerCase()
 				.includes(query.toLowerCase()),
 	),
 );
 const draftCount = $derived(posts.filter((post) => post.draft).length);
+const selectionState = $derived(
+	selected.length === 0
+		? false
+		: visible.every((post) => selected.includes(post.file))
+			? true
+			: null,
+);
+
+function selectPost(file: string, checked: boolean | null) {
+	if (checked && selected.length < 200)
+		selected = [...selected.filter((value) => value !== file), file];
+	else selected = selected.filter((value) => value !== file);
+}
+function requestDelete(targets: AdminPost[]) {
+	if (saving || !targets.length) return;
+	deleteTargets = targets;
+	deleteOpen = true;
+}
+async function manage(
+	action: AdminPostBatch["action"],
+	targets = posts.filter((post) => selected.includes(post.file)),
+) {
+	if (saving || !targets.length) return;
+	deleteOpen = false;
+	saving = true;
+	error = null;
+	message = "";
+	try {
+		const result = await api<{ count: number }>("posts/batch", {
+			action,
+			posts: targets.map(({ file, version }) => ({ file, version })),
+		});
+		if (!active) return;
+		selected = [];
+		await refresh();
+		message = t(
+			action === "delete" ? I18nKey.adminDeleted : I18nKey.adminBatchSaved,
+		).replace("{count}", String(result.count));
+	} catch (issue) {
+		if (active) error = errorKey((issue as Error).message);
+	} finally {
+		if (active) saving = false;
+	}
+}
 
 function errorKey(code: string): I18nKey {
+	if (code === "encryptionPasswordRequired")
+		return I18nKey.adminEncryptPasswordRequired;
+	if (code === "encryptionPasswordInvalid")
+		return I18nKey.adminEncryptPasswordInvalid;
 	if (code === "conflict") return I18nKey.adminConflict;
 	if (code === "exists") return I18nKey.adminExists;
 	if (code === "external") return I18nKey.adminExternal;
@@ -212,7 +287,14 @@ async function refresh() {
 	try {
 		if (!token) token = (await api<{ token: string }>("session")).token;
 		const result = await api<{ posts: AdminPost[] }>("posts");
-		if (active && generation === loadGeneration) posts = result.posts;
+		if (active && generation === loadGeneration) {
+			posts = result.posts;
+			if (
+				category.startsWith("category:") &&
+				!posts.some((post) => `category:${post.category}` === category)
+			)
+				category = "all";
+		}
 	} catch (issue) {
 		if (active && generation === loadGeneration)
 			error = errorKey((issue as Error).message);
@@ -248,9 +330,14 @@ async function open(post?: AdminPost) {
 					draft: true,
 					pinned: false,
 					body: "",
+					encrypted: false,
+					hasPassword: false,
+					password: "",
+					passwordHint: "",
 				};
 		if (!active) return;
 		form = value;
+		originalPassword = value.password ?? "";
 		tagInput = value.tags.join(", ");
 		original = JSON.stringify(value);
 		await tick();
@@ -276,6 +363,7 @@ async function save(event: SubmitEvent) {
 	try {
 		const data = {
 			...form,
+			password: form.encrypted ? form.password : "",
 			tags: tagInput
 				.split(/[,，]/)
 				.map((tag) => tag.trim())
@@ -285,6 +373,7 @@ async function save(event: SubmitEvent) {
 		const saved = await api<AdminPost & { body: string }>("post", data);
 		if (!active) return;
 		form = { ...saved, create: false };
+		originalPassword = saved.password ?? "";
 		tagInput = saved.tags.join(", ");
 		original = JSON.stringify(form);
 		message = t(
@@ -347,6 +436,7 @@ onMount(() => {
   {:else if name === "draft"}<path d="M8 3h8l4 4v14H4V3h4M15 3v5h5M8 12h8M8 16h5" />
   {:else if name === "published"}<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>
   {:else if name === "settings"}<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>
+  {:else if name === "delete"}<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7"/>
   {:else}<path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />{/if}
  </svg>
 {/snippet}
@@ -420,6 +510,15 @@ onMount(() => {
       <span>{t(I18nKey.adminImage)}</span><AdminImageField bind:value={form.image} label={t(I18nKey.adminImage)} {locale} post={form.file} {uploadImage} disabled={saving || imageUploads > 0} />
       <div class="admin-toggle"><span>{t(I18nKey.adminDraft)}</span><Switch bind:checked={form.draft} label={t(I18nKey.adminDraft)} /></div>
       <div class="admin-toggle"><span>{t(I18nKey.adminPinned)}</span><Switch bind:checked={form.pinned} label={t(I18nKey.adminPinned)} /></div>
+      <div class="admin-toggle"><span>{t(I18nKey.adminEncryptPost)}</span><Switch bind:checked={form.encrypted} label={t(I18nKey.adminEncryptPost)} disabled={saving} /></div>
+      {#if form.encrypted}
+       {#if form.hasPassword}<p class="admin-helper" role="status">{t(I18nKey.adminEncryptPasswordSaved)}</p>{/if}
+       <label for="post-encryption-password">{t(I18nKey.adminEncryptPassword)}</label>
+       <input id="post-encryption-password" type="text" autocomplete="off" spellcheck="false" bind:value={form.password} minlength={form.hasPassword && form.password === originalPassword ? undefined : 6} maxlength={form.hasPassword && form.password === originalPassword ? undefined : 20} required={!form.hasPassword} placeholder={form.hasPassword ? t(I18nKey.adminEncryptPasswordKeep) : ""} disabled={saving} />
+       <label for="post-password-hint">{t(I18nKey.adminEncryptPasswordHint)}</label>
+       <input id="post-password-hint" bind:value={form.passwordHint} maxlength="300" disabled={saving} />
+      {/if}
+      <p class="admin-helper">{t(I18nKey.adminEncryptHelp)}</p>
      </section>
     </div>
    </form>
@@ -437,15 +536,25 @@ onMount(() => {
     <section class="admin-panel admin-posts" aria-labelledby="articles-heading">
      <div class="admin-list-heading"><h2 id="articles-heading">{t(filter === "draft" ? I18nKey.adminDrafts : filter === "published" ? I18nKey.adminPublished : I18nKey.adminPosts)}</h2>
       <div class="admin-search"><TextField hideLabel label={t(I18nKey.adminSearch)} placeholder={t(I18nKey.adminSearch)} bind:value={query} /></div>
-      <Button variant="text" disabled={loading} label={t(I18nKey.adminRefresh)} onclick={() => void refresh()} />
+      <div class="admin-category-filter"><Select label={t(I18nKey.adminCategoryFilter)} items={categoryItems} bind:value={category} disabled={loading || saving} /></div>
+      <Button variant="text" disabled={loading || saving} label={t(I18nKey.adminRefresh)} onclick={() => { selected = []; void refresh(); }} />
+     </div>
+     <div class="admin-batch-toolbar">
+      <Checkbox triState label={t(I18nKey.adminSelectAll)} disabled={loading || saving || !visible.length || visible.length > 200} bind:checked={() => selectionState, (checked) => { selected = checked ? visible.map((post) => post.file) : []; }} />
+      <span class="admin-helper" aria-live="polite">{t(I18nKey.adminSelectedCount).replace("{count}", String(selected.length))}</span>
+      <Button variant="tonal" disabled={!selected.length || saving || loading} label={t(I18nKey.adminBatchDraft)} onclick={() => void manage("draft")} />
+      <Button variant="tonal" disabled={!selected.length || saving || loading} label={t(I18nKey.adminBatchPublish)} onclick={() => void manage("publish")} />
+      <Button variant="text" disabled={!selected.length || saving || loading} label={t(I18nKey.adminBatchDelete)} onclick={() => requestDelete(posts.filter((post) => selected.includes(post.file)))} />
+      {#if visible.length > 200}<span class="admin-helper">{t(I18nKey.adminBatchLimit)}</span>{/if}
      </div>
      {#if loading}<p role="status" class="admin-empty">{t(I18nKey.adminLoading)}</p>
      {:else if !visible.length}<p class="admin-empty">{t(I18nKey.adminEmpty)}</p>
      {:else}<ul class="admin-article-list">{#each visible as post (post.file)}
-      <li><span class="admin-article-icon">{@render symbol(post.draft ? "draft" : "posts")}</span>
+      <li><Checkbox label={`${t(I18nKey.adminSelectPost)}: ${post.title}`} disabled={saving || (!selected.includes(post.file) && selected.length >= 200)} bind:checked={() => selected.includes(post.file), (checked) => selectPost(post.file, checked)} /><span class="admin-article-icon">{@render symbol(post.draft ? "draft" : "posts")}</span>
        <div class="admin-article-info"><button class="admin-article-title" onclick={() => void open(post)}>{post.title}</button><p><time datetime={post.published}>{post.published}</time>{#if post.category}<span>·</span>{post.category}{/if}</p></div>
        <span class="admin-status" class:draft={post.draft}>{t(post.draft ? I18nKey.adminDrafts : I18nKey.adminPublished)}</span>
-       <Button variant="text" ariaLabel={`${t(I18nKey.adminEdit)}: ${post.title}`} onclick={() => void open(post)}>{@render symbol("edit")}</Button>
+       <div class="admin-article-actions"><Button variant="text" disabled={saving} ariaLabel={`${t(I18nKey.adminEdit)}: ${post.title}`} onclick={() => void open(post)}>{@render symbol("edit")}</Button>
+       <Button variant="text" disabled={saving} ariaLabel={`${t(I18nKey.adminDelete)}: ${post.title}`} onclick={() => requestDelete([post])}>{@render symbol("delete")}</Button></div>
       </li>
      {/each}</ul>{/if}
     </section>
@@ -458,3 +567,11 @@ onMount(() => {
 </div>
 
 {/if}
+
+<Dialog bind:open={deleteOpen} title={t(I18nKey.adminDeleteConfirmTitle)} showCloseButton={false}>
+ <p>{t(I18nKey.adminDeleteConfirm).replace("{count}", String(deleteTargets.length))}</p>
+ {#snippet actions()}
+  <Button variant="text" label={t(I18nKey.cancel)} onclick={() => { deleteOpen = false; }} />
+  <Button label={t(I18nKey.adminDelete)} onclick={() => void manage("delete", deleteTargets)} />
+ {/snippet}
+</Dialog>

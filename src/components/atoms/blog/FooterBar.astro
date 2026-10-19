@@ -20,6 +20,13 @@ interface Props {
 	versionHref?: string;
 	/** 自定义注入的页脚 HTML（来自 FooterConfig.html） */
 	customHtml?: string;
+	registration?: {
+		icpText: string;
+		policeText: string;
+		policeCode: string;
+		image: string;
+		badgeLabel: string;
+	};
 	class?: string;
 }
 
@@ -31,6 +38,7 @@ const {
 	version = "",
 	versionHref = "",
 	customHtml = "",
+	registration,
 	class: className,
 } = Astro.props;
 ---
@@ -38,6 +46,15 @@ const {
 <footer class:list={["m3-blog-footer", className]}>
 	<div class="m3-blog-footer__divider" aria-hidden="true" />
 	<div class="m3-blog-footer__inner">
+		{registration && (
+			<div class="m3-blog-footer__registration">
+				<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="m3-blog-footer__link">{registration.icpText}</a>
+				<a href={registration.policeCode ? `https://beian.mps.gov.cn/#/query/webSearch?code=${encodeURIComponent(registration.policeCode)}` : "https://beian.mps.gov.cn/"} target="_blank" rel="noopener noreferrer" class="m3-blog-footer__link m3-blog-footer__police">
+					{registration.image ? <img src={registration.image} alt="" width="20" height="20" loading="lazy" /> : <span class="m3-blog-footer__badge-placeholder" title={registration.badgeLabel} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-dasharray="3 2" /><path d="m6 17 5-5 3 3 4-4" stroke="currentColor" /></svg></span>}
+					{registration.policeText}
+				</a>
+			</div>
+		)}
 		{customHtml && <div class="m3-blog-footer__custom" set:html={customHtml} />}
 		<p class="m3-blog-footer__text">
 			&copy; {year} {name}. All Rights Reserved.
@@ -90,6 +107,27 @@ const {
 
 <style lang="stylus">
 .m3-blog-footer
+	&__registration
+		display: flex
+		flex-wrap: wrap
+		justify-content: center
+		align-items: center
+		gap: var(--m3e-space-2) var(--m3e-space-4)
+		font: var(--m3e-type-body-small)
+	&__police
+		display: inline-flex
+		align-items: center
+		gap: var(--m3e-space-1)
+		img
+			object-fit: contain
+	&__badge-placeholder
+		display: inline-flex
+		width: 1.25rem
+		height: 1.25rem
+		color: var(--on-surface-variant)
+		svg
+			width: 100%
+			height: 100%
 	&__divider
 		border-top: 1px dashed var(--outline-variant)
 		margin: 2.5rem 2rem 1.5rem

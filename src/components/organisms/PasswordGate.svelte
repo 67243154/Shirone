@@ -60,6 +60,18 @@ const payloadId = protectedPayloadId(payload);
 const expectedContentType = isPostScope ? "text/html" : "application/json";
 
 onMount(() => {
+	// Web Crypto is unavailable on public HTTP origins. Upgrade before asking
+	// for a password instead of misreporting every decryption failure as wrong.
+	if (
+		!globalThis.crypto?.subtle &&
+		window.location.protocol === "http:" &&
+		!window.location.port
+	) {
+		const secureUrl = new URL(window.location.href);
+		secureUrl.protocol = "https:";
+		window.location.replace(secureUrl.href);
+		return;
+	}
 	if (payload.contentType !== expectedContentType) return;
 	const session = readProtectedSession(scope, payloadId);
 	if (session) onunlocked(session.content);
@@ -70,6 +82,10 @@ function clearError() {
 }
 
 async function unlock() {
+	if (!globalThis.crypto?.subtle) {
+		error = i18n(I18nKey.protectedSecureConnectionRequired);
+		return;
+	}
 	if (!password.trim()) {
 		error = isPostScope
 			? i18n(I18nKey.postPasswordRequired)

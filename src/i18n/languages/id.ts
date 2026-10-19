@@ -2,6 +2,42 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const id: Translation = {
+	[Key.adminAllCategories]: "Semua kategori",
+	[Key.adminCategoryFilter]: "Filter menurut kategori",
+	[Key.adminSelectAll]: "Pilih semua hasil filter",
+	[Key.adminSelectPost]: "Pilih artikel",
+	[Key.adminSelectedCount]: "{count} dipilih",
+	[Key.adminBatchDraft]: "Jadikan draf",
+	[Key.adminBatchPublish]: "Terbitkan pilihan",
+	[Key.adminBatchDelete]: "Hapus pilihan",
+	[Key.adminBatchLimit]: "Maksimal 200 artikel per kelompok",
+	[Key.adminDelete]: "Hapus",
+	[Key.adminDeleteConfirmTitle]: "Konfirmasi penghapusan",
+	[Key.adminDeleteConfirm]:
+		"Hapus {count} artikel? Berkas asli dicadangkan dan artikel tidak lagi tampil di halaman publik.",
+	[Key.adminDeleted]: "{count} artikel dihapus; berkas asli dicadangkan.",
+	[Key.adminBatchSaved]: "{count} artikel diperbarui.",
+
+	[Key.footerCopyrightPlaceholder]: "Nama pemegang hak cipta belum diisi",
+	[Key.footerIcpPlaceholder]: "Registrasi ICP: belum diisi",
+	[Key.footerPolicePlaceholder]: "Registrasi keamanan publik: belum diisi",
+	[Key.footerBadgePlaceholder]: "Placeholder lambang registrasi",
+
+	[Key.adminEncryptPasswordSaved]:
+		"Kata sandi tersimpan. Lihat atau ubah di sini; menyimpan kolom kosong mempertahankan kata sandi lama.",
+	[Key.protectedSecureConnectionRequired]:
+		"Dekripsi aman tidak tersedia pada koneksi ini. Buka halaman melalui HTTPS.",
+	[Key.adminEncryptPost]: "Enkripsi artikel",
+	[Key.adminEncryptPassword]: "Kata sandi artikel",
+	[Key.adminEncryptPasswordHint]: "Petunjuk kata sandi (opsional)",
+	[Key.adminEncryptPasswordKeep]:
+		"Sudah diatur; kosongkan untuk mempertahankan",
+	[Key.adminEncryptHelp]:
+		"Kata sandi baru harus 6–20 karakter. Menonaktifkan enkripsi membuat artikel dapat dibaca publik.",
+	[Key.adminEncryptPasswordRequired]:
+		"Atur kata sandi sebelum mengaktifkan enkripsi.",
+	[Key.adminEncryptPasswordInvalid]:
+		"Kata sandi baru harus 6–20 karakter dan tidak boleh hanya berisi spasi.",
 	[Key.adminUploadImage]: "Unggah gambar",
 	[Key.adminUploadingImage]: "Mengunggah…",
 	[Key.adminUploadHint]:

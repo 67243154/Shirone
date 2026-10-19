@@ -2,6 +2,41 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const vi: Translation = {
+	[Key.adminAllCategories]: "Tất cả danh mục",
+	[Key.adminCategoryFilter]: "Lọc theo danh mục",
+	[Key.adminSelectAll]: "Chọn tất cả kết quả lọc",
+	[Key.adminSelectPost]: "Chọn bài viết",
+	[Key.adminSelectedCount]: "Đã chọn {count}",
+	[Key.adminBatchDraft]: "Chuyển thành bản nháp",
+	[Key.adminBatchPublish]: "Xuất bản đã chọn",
+	[Key.adminBatchDelete]: "Xóa đã chọn",
+	[Key.adminBatchLimit]: "Tối đa 200 bài mỗi lần",
+	[Key.adminDelete]: "Xóa",
+	[Key.adminDeleteConfirmTitle]: "Xác nhận xóa",
+	[Key.adminDeleteConfirm]:
+		"Xóa {count} bài viết? Tệp gốc được sao lưu và bài viết không còn hiển thị công khai.",
+	[Key.adminDeleted]: "Đã xóa {count} bài viết và sao lưu tệp gốc.",
+	[Key.adminBatchSaved]: "Đã cập nhật {count} bài viết.",
+
+	[Key.footerCopyrightPlaceholder]: "Tên chủ sở hữu bản quyền chưa điền",
+	[Key.footerIcpPlaceholder]: "Đăng ký ICP: chưa điền",
+	[Key.footerPolicePlaceholder]: "Đăng ký an ninh công cộng: chưa điền",
+	[Key.footerBadgePlaceholder]: "Vị trí huy hiệu đăng ký",
+
+	[Key.adminEncryptPasswordSaved]:
+		"Đã lưu mật khẩu. Xem hoặc sửa tại đây; lưu trường trống sẽ giữ mật khẩu hiện tại.",
+	[Key.protectedSecureConnectionRequired]:
+		"Kết nối này không hỗ trợ giải mã an toàn. Hãy mở trang bằng HTTPS.",
+	[Key.adminEncryptPost]: "Mã hóa bài viết",
+	[Key.adminEncryptPassword]: "Mật khẩu bài viết",
+	[Key.adminEncryptPasswordHint]: "Gợi ý mật khẩu (tùy chọn)",
+	[Key.adminEncryptPasswordKeep]: "Đã đặt; để trống để giữ mật khẩu cũ",
+	[Key.adminEncryptHelp]:
+		"Mật khẩu mới cần 6–20 ký tự. Tắt mã hóa sẽ cho phép mọi người đọc bài viết.",
+	[Key.adminEncryptPasswordRequired]:
+		"Đặt mật khẩu bài viết trước khi bật mã hóa.",
+	[Key.adminEncryptPasswordInvalid]:
+		"Mật khẩu mới cần 6–20 ký tự và không được chỉ chứa khoảng trắng.",
 	[Key.adminUploadImage]: "Tải ảnh lên",
 	[Key.adminUploadingImage]: "Đang tải lên…",
 	[Key.adminUploadHint]:

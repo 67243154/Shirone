@@ -16,7 +16,11 @@ import MarkdownIt from "markdown-it";
 import sanitizeHtml from "sanitize-html";
 import type { Plugin } from "vite";
 import { parseDocument, Scalar } from "yaml";
-import type { AdminPost, AdminSave } from "../../types/admin.ts";
+import type {
+	AdminPost,
+	AdminPostBatch,
+	AdminSave,
+} from "../../types/admin.ts";
 import {
 	AdminAuthError,
 	adminSessionCookie,
@@ -72,6 +76,17 @@ function shape(file: string, source: string, includeBody = false): AdminPost {
 		image: String(data.image ?? ""),
 		draft: data.draft === true,
 		pinned: data.pinned === true,
+		encrypted:
+			data.encrypted === true ||
+			(data.password !== undefined && String(data.password).trim().length > 0),
+		hasPassword:
+			data.password !== undefined && String(data.password).trim().length > 0,
+		...(includeBody
+			? {
+					passwordHint: String(data.passwordHint ?? ""),
+					password: String(data.password ?? ""),
+				}
+			: {}),
 		...(includeBody ? { body } : {}),
 	};
 }
@@ -89,6 +104,7 @@ export function createAdminStore(
 	list(): Promise<AdminPost[]>;
 	read(file: string): Promise<AdminPost>;
 	save(input: AdminSave): Promise<AdminPost>;
+	batch(input: AdminPostBatch): Promise<{ count: number }>;
 } {
 	const root = resolve(contentDir, "posts");
 	let pending: Promise<unknown> = Promise.resolve();
@@ -103,7 +119,12 @@ export function createAdminStore(
 			throw new AdminError("path");
 		const result = resolve(root, file);
 		const suffix = relative(root, result);
-		if (!suffix || suffix.startsWith("..") || isAbsolute(suffix))
+		if (
+			!suffix ||
+			suffix.startsWith("..") ||
+			isAbsolute(suffix) ||
+			suffix.replaceAll("\\", "/") !== file
+		)
 			throw new AdminError("path");
 		// Reject links in every segment, including the content root itself.
 		let current = root;
@@ -178,6 +199,39 @@ export function createAdminStore(
 			if (!input.create && input.version !== fingerprint(original))
 				throw new AdminError("conflict", 409);
 			const { document } = split(original);
+			if (input.encrypted !== undefined && typeof input.encrypted !== "boolean")
+				throw new AdminError("validation");
+			if (
+				input.passwordHint !== undefined &&
+				(typeof input.passwordHint !== "string" ||
+					input.passwordHint.length > 300)
+			)
+				throw new AdminError("validation");
+			if (
+				input.password !== undefined &&
+				(typeof input.password !== "string" ||
+					(input.password.length > 0 &&
+						input.password !== String(document.get("password") ?? "") &&
+						(input.password.length < 6 ||
+							input.password.length > 20 ||
+							!input.password.trim())))
+			)
+				throw new AdminError("encryptionPasswordInvalid");
+			if (input.encrypted !== undefined) {
+				if (input.encrypted) {
+					const nextPassword = input.password || document.get("password");
+					if (nextPassword === undefined || !String(nextPassword).trim())
+						throw new AdminError("encryptionPasswordRequired");
+					document.set("encrypted", true);
+					if (input.password) document.set("password", input.password);
+					if (input.passwordHint !== undefined)
+						document.set("passwordHint", input.passwordHint);
+				} else {
+					document.set("encrypted", false);
+					document.delete("password");
+					document.delete("passwordHint");
+				}
+			}
 			await validateBody?.(input.file, input.body, split(original).body);
 			if (backupDir && !input.create) {
 				const backup = resolve(backupDir, input.file);
@@ -230,11 +284,101 @@ export function createAdminStore(
 		pending = result.catch(() => {});
 		return result;
 	}
+	function batch(input: AdminPostBatch): Promise<{ count: number }> {
+		const task = async () => {
+			if (
+				!input ||
+				!["delete", "draft", "publish"].includes(input.action) ||
+				!Array.isArray(input.posts) ||
+				!input.posts.length ||
+				input.posts.length > 200 ||
+				input.posts.some(
+					(item) =>
+						!item ||
+						typeof item.file !== "string" ||
+						typeof item.version !== "string",
+				) ||
+				new Set(input.posts.map((item) => item.file)).size !==
+					input.posts.length
+			)
+				throw new AdminError("validation");
+			const entries = [];
+			for (const item of input.posts) {
+				const path = await target(item.file);
+				const source = await readFile(path, "utf8");
+				if (fingerprint(source) !== item.version)
+					throw new AdminError("conflict", 409);
+				const { document, body } = split(source);
+				document.set("draft", input.action === "draft");
+				entries.push({
+					...item,
+					path,
+					source,
+					next: `---\n${document.toString()}---\n${body}`,
+				});
+			}
+			const backupRoot = resolve(
+				backupDir ?? resolve(contentDir, "../.shirone-admin-backups"),
+			);
+			const rootSuffix = relative(root, backupRoot);
+			if (
+				!rootSuffix ||
+				(!rootSuffix.startsWith("..") && !isAbsolute(rootSuffix))
+			)
+				throw new AdminError("path");
+			const batchDir = join(
+				backupRoot,
+				`batch-${Date.now()}-${randomBytes(6).toString("hex")}`,
+			);
+			await mkdir(batchDir, { recursive: true, mode: 0o700 });
+			for (const entry of entries) {
+				const backup = join(batchDir, entry.file);
+				await mkdir(resolve(backup, ".."), { recursive: true, mode: 0o700 });
+				await writeFile(backup, entry.source, { flag: "wx", mode: 0o600 });
+			}
+			const changed: typeof entries = [];
+			try {
+				for (const entry of entries) {
+					await target(entry.file);
+					if (fingerprint(await readFile(entry.path, "utf8")) !== entry.version)
+						throw new AdminError("conflict", 409);
+					if (input.action === "delete") {
+						await rename(entry.path, join(batchDir, `${entry.file}.removed`));
+					} else {
+						const temp = `${entry.path}.${randomBytes(6).toString("hex")}.admin-tmp`;
+						try {
+							await writeFile(temp, entry.next, { flag: "wx" });
+							await rename(temp, entry.path);
+						} finally {
+							await unlink(temp).catch(() => {});
+						}
+					}
+					changed.push(entry);
+				}
+			} catch (error) {
+				for (const entry of changed.reverse()) {
+					if (input.action === "delete")
+						await rename(join(batchDir, `${entry.file}.removed`), entry.path);
+					else {
+						const temp = `${entry.path}.${randomBytes(6).toString("hex")}.admin-tmp`;
+						await writeFile(temp, entry.source, { flag: "wx" });
+						await rename(temp, entry.path);
+					}
+				}
+				throw error;
+			}
+			return { count: entries.length };
+		};
+		const result = pending.then(task);
+		pending = result.catch(() => {});
+		return result;
+	}
 	return {
 		list,
 		read: async (file) =>
 			shape(file, await readFile(await target(file), "utf8"), true),
 		save,
+		batch,
 	};
 }
 
@@ -288,7 +432,7 @@ export function createAdminMiddleware(
 	const token = randomBytes(32).toString("hex");
 	const store = createAdminStore(
 		contentDir,
-		options.backupDir,
+		options.backupDir ?? join(projectRoot, ".shirones/runtime/backups/posts"),
 		options.validateBody,
 	);
 	const documents =
@@ -440,6 +584,10 @@ export function createAdminMiddleware(
 			)
 				throw new AdminError("forbidden", 403);
 			const data = await readJson(request);
+			if (pathname === "/__admin/api/posts/batch")
+				return send(
+					await mutate(() => store.batch(data as unknown as AdminPostBatch)),
+				);
 			if (pathname === "/__admin/api/document")
 				return send(
 					await mutate(() =>

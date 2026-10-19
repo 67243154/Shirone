@@ -2,6 +2,41 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const en: Translation = {
+	[Key.adminAllCategories]: "All categories",
+	[Key.adminCategoryFilter]: "Filter by category",
+	[Key.adminSelectAll]: "Select all filtered posts",
+	[Key.adminSelectPost]: "Select post",
+	[Key.adminSelectedCount]: "{count} selected",
+	[Key.adminBatchDraft]: "Move to drafts",
+	[Key.adminBatchPublish]: "Publish selected",
+	[Key.adminBatchDelete]: "Delete selected",
+	[Key.adminBatchLimit]: "Select up to 200 posts per batch",
+	[Key.adminDelete]: "Delete",
+	[Key.adminDeleteConfirmTitle]: "Confirm deletion",
+	[Key.adminDeleteConfirm]:
+		"Delete these {count} posts? Original files will be backed up and removed from public pages.",
+	[Key.adminDeleted]: "Deleted {count} posts; originals backed up.",
+	[Key.adminBatchSaved]: "Updated {count} posts.",
+
+	[Key.footerCopyrightPlaceholder]: "Copyright name pending",
+	[Key.footerIcpPlaceholder]: "ICP registration: pending",
+	[Key.footerPolicePlaceholder]: "Public security registration: pending",
+	[Key.footerBadgePlaceholder]: "Registration badge placeholder",
+
+	[Key.adminEncryptPasswordSaved]:
+		"Password saved. View or edit it here; saving an empty field keeps the existing password.",
+	[Key.protectedSecureConnectionRequired]:
+		"Secure decryption is unavailable on this connection. Open this page over HTTPS.",
+	[Key.adminEncryptPost]: "Encrypt article",
+	[Key.adminEncryptPassword]: "Article password",
+	[Key.adminEncryptPasswordHint]: "Password hint (optional)",
+	[Key.adminEncryptPasswordKeep]: "Password is set; leave blank to keep it",
+	[Key.adminEncryptHelp]:
+		"New passwords require 6–20 characters. Disabling encryption makes the article publicly readable.",
+	[Key.adminEncryptPasswordRequired]:
+		"Set an article password before enabling encryption.",
+	[Key.adminEncryptPasswordInvalid]:
+		"New article passwords require 6–20 characters and cannot contain only spaces.",
 	[Key.adminUploadImage]: "Upload image",
 	[Key.adminUploadingImage]: "Uploading…",
 	[Key.adminUploadHint]:

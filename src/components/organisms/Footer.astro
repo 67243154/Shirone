@@ -9,8 +9,28 @@ import FooterBar from "@components/atoms/blog/FooterBar.astro";
 import { url } from "@utils/url-utils";
 import { footerConfig, profileConfig } from "@/config";
 import packageMetadata from "../../../package.json";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
 
 const currentYear = new Date().getFullYear();
+const copyrightName =
+	footerConfig.copyrightName === undefined
+		? profileConfig.name
+		: footerConfig.copyrightName || i18n(I18nKey.footerCopyrightPlaceholder);
+const registration = footerConfig.registration?.enable
+	? {
+			icpText:
+				footerConfig.registration.icpNumber ||
+				i18n(I18nKey.footerIcpPlaceholder),
+			policeText:
+				footerConfig.registration.policeNumber ||
+				i18n(I18nKey.footerPolicePlaceholder),
+			policeCode:
+				footerConfig.registration.policeNumber.match(/\d+/g)?.join("") || "",
+			image: footerConfig.registration.image,
+			badgeLabel: i18n(I18nKey.footerBadgePlaceholder),
+		}
+	: undefined;
 const links = [
 	{ label: "RSS", href: url("rss/") },
 	{ label: "Atom", href: url("atom/") },
@@ -58,11 +78,12 @@ if (footerConfig.enable) {
 ---
 
 <FooterBar
-	name={profileConfig.name}
+	name={copyrightName}
 	year={currentYear}
 	links={links}
 	poweredBy={poweredBy}
 	version={packageMetadata.version}
 	versionHref={isShironesPackage ? "https://www.npmjs.com/package/shirones" : "https://github.com/LyraVoid/Shirone"}
 	customHtml={customFooterHtml}
+	{registration}
 />

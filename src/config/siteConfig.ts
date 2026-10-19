@@ -121,7 +121,9 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 	},
 	favicon: [
 		// 浏览器标签页图标，路径相对于 public 目录。
-		{ src: "/logo/icon.webp" },
+		{ src: "/favicon/steve-cat.ico", sizes: "16x16 32x32 48x48" },
+		{ src: "/favicon/steve-cat-32.png", sizes: "32x32" },
+		{ src: "/favicon/steve-cat-256.png", sizes: "256x256" },
 	],
 });
 

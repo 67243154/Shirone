@@ -2,6 +2,39 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const zh_CN: Translation = {
+	[Key.adminAllCategories]: "全部分类",
+	[Key.adminCategoryFilter]: "按分类筛选",
+	[Key.adminSelectAll]: "全选当前筛选结果",
+	[Key.adminSelectPost]: "选择文章",
+	[Key.adminSelectedCount]: "已选 {count} 篇",
+	[Key.adminBatchDraft]: "转为草稿",
+	[Key.adminBatchPublish]: "发布所选",
+	[Key.adminBatchDelete]: "批量删除",
+	[Key.adminBatchLimit]: "每批最多选择 200 篇文章",
+	[Key.adminDelete]: "删除",
+	[Key.adminDeleteConfirmTitle]: "确认删除文章",
+	[Key.adminDeleteConfirm]:
+		"确定删除这 {count} 篇文章吗？原文件会移入备份目录，公开页面将不再显示。",
+	[Key.adminDeleted]: "已删除 {count} 篇文章，原文件已备份。",
+	[Key.adminBatchSaved]: "已更新 {count} 篇文章。",
+
+	[Key.footerCopyrightPlaceholder]: "版权名称待填写",
+	[Key.footerIcpPlaceholder]: "工信部 ICP 备案号：待填写",
+	[Key.footerPolicePlaceholder]: "公安备案号：待填写",
+	[Key.footerBadgePlaceholder]: "公安备案徽标占位",
+
+	[Key.adminEncryptPasswordSaved]:
+		"密码已保存。这里可直接查看和修改；清空后保存会保留原密码。",
+	[Key.protectedSecureConnectionRequired]:
+		"当前连接无法进行安全解密，请通过 HTTPS 打开此页面。",
+	[Key.adminEncryptPost]: "启用文章加密",
+	[Key.adminEncryptPassword]: "文章密码",
+	[Key.adminEncryptPasswordHint]: "密码提示（可选）",
+	[Key.adminEncryptPasswordKeep]: "已设置密码，留空保持不变",
+	[Key.adminEncryptHelp]: "新密码要求 6～20 位。关闭加密后，文章将公开可读。",
+	[Key.adminEncryptPasswordRequired]: "启用加密前，请先设置文章密码。",
+	[Key.adminEncryptPasswordInvalid]:
+		"新文章密码必须为 6～20 位，不能全为空格。",
 	[Key.adminUploadImage]: "上传图片",
 	[Key.adminUploadingImage]: "正在上传…",
 	[Key.adminUploadHint]:

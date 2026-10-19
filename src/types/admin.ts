@@ -10,6 +10,16 @@ export interface AdminPost {
 	draft: boolean;
 	pinned: boolean;
 	body?: string;
+	encrypted?: boolean;
+	hasPassword?: boolean;
+	passwordHint?: string;
+	/** Available only in authenticated single-article responses, never lists. */
+	password?: string;
+}
+
+export interface AdminPostBatch {
+	action: "delete" | "draft" | "publish";
+	posts: { file: string; version: string }[];
 }
 
 export interface AdminSave {
@@ -25,6 +35,11 @@ export interface AdminSave {
 	draft: boolean;
 	pinned: boolean;
 	body: string;
+	encrypted?: boolean;
+	hasPassword?: boolean;
+	/** An empty value retains the existing password. */
+	password?: string;
+	passwordHint?: string;
 }
 
 export interface AdminField {

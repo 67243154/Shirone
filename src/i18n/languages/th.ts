@@ -2,6 +2,40 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const th: Translation = {
+	[Key.adminAllCategories]: "ทุกหมวดหมู่",
+	[Key.adminCategoryFilter]: "กรองตามหมวดหมู่",
+	[Key.adminSelectAll]: "เลือกผลการกรองทั้งหมด",
+	[Key.adminSelectPost]: "เลือกบทความ",
+	[Key.adminSelectedCount]: "เลือกแล้ว {count} รายการ",
+	[Key.adminBatchDraft]: "ย้ายเป็นฉบับร่าง",
+	[Key.adminBatchPublish]: "เผยแพร่ที่เลือก",
+	[Key.adminBatchDelete]: "ลบที่เลือก",
+	[Key.adminBatchLimit]: "สูงสุด 200 บทความต่อครั้ง",
+	[Key.adminDelete]: "ลบ",
+	[Key.adminDeleteConfirmTitle]: "ยืนยันการลบ",
+	[Key.adminDeleteConfirm]:
+		"ลบ {count} บทความหรือไม่? จะสำรองต้นฉบับและนำออกจากหน้าสาธารณะ",
+	[Key.adminDeleted]: "ลบ {count} บทความและสำรองต้นฉบับแล้ว",
+	[Key.adminBatchSaved]: "อัปเดต {count} บทความแล้ว",
+
+	[Key.footerCopyrightPlaceholder]: "ยังไม่ได้ระบุชื่อเจ้าของลิขสิทธิ์",
+	[Key.footerIcpPlaceholder]: "ทะเบียน ICP: ยังไม่ได้ระบุ",
+	[Key.footerPolicePlaceholder]: "ทะเบียนความปลอดภัยสาธารณะ: ยังไม่ได้ระบุ",
+	[Key.footerBadgePlaceholder]: "พื้นที่สำหรับตราทะเบียน",
+
+	[Key.adminEncryptPasswordSaved]:
+		"บันทึกรหัสผ่านแล้ว ดูหรือแก้ไขได้ที่นี่ หากเว้นว่างแล้วบันทึกจะใช้รหัสผ่านเดิม",
+	[Key.protectedSecureConnectionRequired]:
+		"การเชื่อมต่อนี้ไม่รองรับการถอดรหัสอย่างปลอดภัย โปรดเปิดหน้านี้ผ่าน HTTPS",
+	[Key.adminEncryptPost]: "เข้ารหัสบทความ",
+	[Key.adminEncryptPassword]: "รหัสผ่านบทความ",
+	[Key.adminEncryptPasswordHint]: "คำใบ้รหัสผ่าน (ไม่บังคับ)",
+	[Key.adminEncryptPasswordKeep]: "ตั้งค่าแล้ว เว้นว่างเพื่อใช้รหัสผ่านเดิม",
+	[Key.adminEncryptHelp]:
+		"รหัสผ่านใหม่ต้องมี 6–20 ตัวอักษร การปิดการเข้ารหัสจะทำให้ทุกคนอ่านบทความได้",
+	[Key.adminEncryptPasswordRequired]: "ตั้งรหัสผ่านบทความก่อนเปิดการเข้ารหัส",
+	[Key.adminEncryptPasswordInvalid]:
+		"รหัสผ่านใหม่ต้องมี 6–20 ตัวอักษร และต้องไม่เป็นช่องว่างทั้งหมด",
 	[Key.adminUploadImage]: "อัปโหลดรูปภาพ",
 	[Key.adminUploadingImage]: "กำลังอัปโหลด…",
 	[Key.adminUploadHint]:

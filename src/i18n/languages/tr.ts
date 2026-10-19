@@ -2,6 +2,41 @@ import Key from "../i18nKey-runtime.mjs";
 import type { Translation } from "../translation.ts";
 
 export const tr: Translation = {
+	[Key.adminAllCategories]: "Tüm kategoriler",
+	[Key.adminCategoryFilter]: "Kategoriye göre filtrele",
+	[Key.adminSelectAll]: "Filtrelenen yazıları seç",
+	[Key.adminSelectPost]: "Yazıyı seç",
+	[Key.adminSelectedCount]: "{count} seçildi",
+	[Key.adminBatchDraft]: "Taslağa taşı",
+	[Key.adminBatchPublish]: "Seçilenleri yayımla",
+	[Key.adminBatchDelete]: "Seçilenleri sil",
+	[Key.adminBatchLimit]: "En fazla 200 yazı seçin",
+	[Key.adminDelete]: "Sil",
+	[Key.adminDeleteConfirmTitle]: "Silmeyi onayla",
+	[Key.adminDeleteConfirm]:
+		"{count} yazı silinsin mi? Orijinaller yedeklenip herkese açık sayfalardan kaldırılacak.",
+	[Key.adminDeleted]: "{count} yazı silindi; orijinaller yedeklendi.",
+	[Key.adminBatchSaved]: "{count} yazı güncellendi.",
+
+	[Key.footerCopyrightPlaceholder]: "Telif hakkı sahibi henüz girilmedi",
+	[Key.footerIcpPlaceholder]: "ICP kaydı: henüz girilmedi",
+	[Key.footerPolicePlaceholder]: "Kamu güvenliği kaydı: henüz girilmedi",
+	[Key.footerBadgePlaceholder]: "Kayıt rozeti yer tutucusu",
+
+	[Key.adminEncryptPasswordSaved]:
+		"Parola kaydedildi. Burada görüntüleyip değiştirebilirsiniz; boş kaydetmek mevcut parolayı korur.",
+	[Key.protectedSecureConnectionRequired]:
+		"Bu bağlantıda güvenli şifre çözme kullanılamıyor. Sayfayı HTTPS ile açın.",
+	[Key.adminEncryptPost]: "Yazıyı şifrele",
+	[Key.adminEncryptPassword]: "Yazı parolası",
+	[Key.adminEncryptPasswordHint]: "Parola ipucu (isteğe bağlı)",
+	[Key.adminEncryptPasswordKeep]: "Parola ayarlı; korumak için boş bırakın",
+	[Key.adminEncryptHelp]:
+		"Yeni parola 6–20 karakter olmalıdır. Şifrelemeyi kapatmak yazıyı herkese açar.",
+	[Key.adminEncryptPasswordRequired]:
+		"Şifrelemeyi etkinleştirmeden önce bir yazı parolası belirleyin.",
+	[Key.adminEncryptPasswordInvalid]:
+		"Yeni parola 6–20 karakter olmalı ve yalnızca boşluklardan oluşmamalıdır.",
 	[Key.adminUploadImage]: "Görsel yükle",
 	[Key.adminUploadingImage]: "Yükleniyor…",
 	[Key.adminUploadHint]:
